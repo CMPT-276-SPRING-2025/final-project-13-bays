@@ -1,20 +1,40 @@
-# Project-Starter
+# 📌 Project Proposal: [Project Title]
 
-Please use the provided folder structure for your docs (proosal, design documenation, communications log, weekly logs and final documentation), source code, tesing, etc. You are free to organize any additional internal folder structure as required by the project. Please use a branching workflow and once an item is ready, do remember to issue a PR, review and merge in into the main brach.
+## 📂 Group Information
+- **Group Number:** [Your Group Number]
+- **Group Name:** [Your Group Name]
 
-```
-.
-├── docs                    # Documentation files (alternatively `doc`)
-│   ├── propsal             # Proposal
-│   ├── design              # Design Documentation
-│   ├── final               # Final Documentation
-│   ├── communication       # Communication Logs
-│   ├── ai-disclosure       # AI Disclosures
-│   └── ...          
-├── src                     # Source files (alternatively `lib` or `app`)
-├── test                    # Automated tests (alternatively `spec` or `tests`)
-├── tools                   # Tools and utilities
-└── README.md
-```
+## 👥 Team Members & Roles
+| Name            | Role                 | Contact Info (Optional) |
+|---------------|--------------------|------------------------|
+| [Member 1]    | [Role 1]           | [Email/Other]          |
+| [Member 2]    | [Role 2]           | [Email/Other]          |
+| [Member 3]    | [Role 3]           | [Email/Other]          |
+| [Member 4]    | [Role 4]           | [Email/Other]          |
 
-Also, update your `README.md` file with the team and project information. You can find details on writing GitHub Markdown [here](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax) as well as a [handy cheatsheet](https://enterprise.github.com/downloads/en/markdown-cheatsheet.pdf).   
+## 📝 Project Title
+**[Your Project Title]**
+
+## 📖 Project Description
+[Provide a concise and clear description of your project. Include the purpose, objectives, and potential impact.]
+
+## 🎯 Goals & Objectives
+- [Objective 1]
+- [Objective 2]
+- [Objective 3]
+
+## 🛠️ Technologies & Tools
+- [Programming Languages]
+- [Frameworks]
+- [Databases]
+- [Other Tools]
+
+## 📆 Timeline
+| Phase          | Task Description          | Deadline  |
+|--------------|------------------------|----------|
+| [Phase 1]    | [Task 1]               | [Date]   |
+| [Phase 2]    | [Task 2]               | [Date]   |
+| [Phase 3]    | [Task 3]               | [Date]   |
+
+## 🚀 Expected Outcome
+[Summarize what the final outcome will be, including expected deliverables.]
