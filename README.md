@@ -7,10 +7,10 @@
 ## 👥 Team Members & Roles
 | Name            | Role                 | Contact Info (Optional) |
 |---------------|--------------------|------------------------|
-| Nicholas Cho    | Project Manager           | nca91@sfu.ca          |
-| Dac Tri Ho    | Research Analysis           | dth10@sfu.ca          |
-| Fujai Shamshir    | Graphics/UI Designer           | fsa43@sfu.ca          |
-| Saad Ahmed Usmani    | QA Tester           | [Email/Other]          |
+| Nicholas Cho    | Project Manager           | nca91@sfu.ca |
+| Dac Tri Ho    | Research Analysis           | dth10@sfu.ca |
+| Fujai Shamshir    | Graphics/UI Designer    | fsa43@sfu.ca |
+| Saad Ahmed Usmani    | QA Tester            | sau1@sfu.ca  |
 
 ## 📝 Project Title
 **Markify**
@@ -37,7 +37,7 @@ __**Goal:**__ Help the user organize projects on a web browsers more convenientl
 - [Programming Languages] HTML, CSS, Javascript
 - [Frameworks] React.JS, Tailwind CSS
 - [Databases] 
-- [API's] 
+- [API's] Todolist, Progressbar (Backup: Calendar, Notes), Recommend schedules, searches/tabs for saved windows
 
 ## 📆 Timeline
 | Phase          | Task Description          | Deadline  |
