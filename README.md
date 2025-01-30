@@ -16,8 +16,7 @@
 **Markify**
 
 ## 📖 Project Description
-Markify organizes and saves the tabs of the user's choice. The user can get back on track of their project with ease. The website also reminds of the upcoming deadlines, preventing procrastination. Further, the secondary feature is an AI-driven schedule that 
-first gives a user a survey, to detail the current commitments of a person, e.g. courses, other work priorities as well as fitness goals, encompassing a productive life roadmap.
+Markify organizes and saves the tabs of the user's choice. The user can get back on track of their project with ease. The website also reminds of the upcoming deadlines, preventing procrastination. Further, the secondary feature is an AI-driven schedule that first gives a user a survey, to detail the current commitments of a person, e.g. courses, other work priorities as well as fitness goals, encompassing a productive life roadmap.
 
 ## Features
 1. Save an entire window (all the tabs) as like a saved folder of some kind whenever you're doing a project.  This helps you continue where you left off much more easily
