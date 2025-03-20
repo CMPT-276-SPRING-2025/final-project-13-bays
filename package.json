@@ -8,7 +8,11 @@
     "test": "test"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo I am in test phase",
+    "dev": "echo I am in dev phase",
+    "prod": "echo I am in prod phase",
+    "pretest": "echo I am in pretest phase",
+    "posttest": "echo I am in posttest phase"
   },
   "repository": {
     "type": "git",
