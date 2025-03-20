@@ -8,7 +8,11 @@
     "test": "test"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo I am in test phase",
+    "dev": "echo I am in dev phase",
+    "prod": "echo I am in prod phase",
+    "pretest": "echo I am in pretest phase",
+    "posttest": "echo I am in posttest phase"
   },
   "repository": {
     "type": "git",
@@ -20,8 +24,5 @@
   "bugs": {
     "url": "https://github.com/CMPT-276-SPRING-2025/final-project-13-bays/issues"
   },
-  "homepage": "https://github.com/CMPT-276-SPRING-2025/final-project-13-bays#readme",
-  "dependencies": {
-    "express": "^4.21.2"
-  }
+  "homepage": "https://github.com/CMPT-276-SPRING-2025/final-project-13-bays#readme"
 }
