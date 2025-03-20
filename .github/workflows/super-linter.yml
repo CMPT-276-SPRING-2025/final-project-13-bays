@@ -1,0 +1,24 @@
+# This workflow executes several linters on changed files based on languages used in your code base
+name: Super-Linter
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  run-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1 # Fetch only the most recent commit ("1") - change to "0" for when we need full commit history
+
+      - name: Run Super Linter
+        uses: github/super-linter@v4
+        env:
+          VALIDATE_ALL_CODEBASE: false # Lint only the changed files ("false") - change to "true" for when we need to lint full code base
+          DEFAULT_BRANCH: "main"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
