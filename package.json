@@ -24,5 +24,14 @@
   "bugs": {
     "url": "https://github.com/CMPT-276-SPRING-2025/final-project-13-bays/issues"
   },
-  "homepage": "https://github.com/CMPT-276-SPRING-2025/final-project-13-bays#readme"
+  "homepage": "https://github.com/CMPT-276-SPRING-2025/final-project-13-bays#readme",
+  "dependencies": {
+    "lucide-react": "^0.484.0"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.3",
+    "postcss-loader": "^8.1.1",
+    "tailwindcss": "^4.0.16"
+  }
 }
