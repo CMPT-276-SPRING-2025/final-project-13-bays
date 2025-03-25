@@ -8,7 +8,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "echo I am in test phase",
+    "test": "jest --roots backend",
     "dev": "echo I am in dev phase",
     "prod": "echo I am in prod phase",
     "pretest": "echo I am in pretest phase",
@@ -24,5 +24,14 @@
   "bugs": {
     "url": "https://github.com/CMPT-276-SPRING-2025/final-project-13-bays/issues"
   },
-  "homepage": "https://github.com/CMPT-276-SPRING-2025/final-project-13-bays#readme"
+  "homepage": "https://github.com/CMPT-276-SPRING-2025/final-project-13-bays#readme",
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^7.1.0"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "firebase": "^11.5.0"
+  }
 }
