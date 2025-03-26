@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "- **Group Number:** 13\r - **Group Name:** Bays",
   "main": "index.js",
+  "private": true,
   "directories": {
     "doc": "docs",
     "test": "test"
