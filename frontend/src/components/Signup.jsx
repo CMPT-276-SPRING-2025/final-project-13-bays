@@ -56,18 +56,18 @@ export default function Signup() {
     {
       content: (
         <>
-          <div className="mb-4 flex justify-center">
+          <div className="mb-6 flex justify-center">
             <img
               src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/picsvg_download%281%29-WLRJbkhN8j1vRZV86VoyVzusKLAtI0.svg"
               alt="TabMark Organization"
-              className="w-80 h-80 object-contain mb-2 rounded-t-lg"
+              className="w-[42%] min-w-[200px] max-w-[320px] object-contain"
             />
           </div>
-          <p className="mb-4">
+          <p className="mb-5 text-lg lg:text-xl">
             Have you ever lost a window's worth of project resources and thought the world was over? Well, lucky you!
             Because we are here to make sure that never happens again!
           </p>
-          <p>
+          <p className="text-lg lg:text-xl">
             The idea of this website is to save our windows of tabs into separate folders for different projects and put
             them in categories based on their due dates.
           </p>
@@ -77,18 +77,18 @@ export default function Signup() {
     {
       content: (
         <>
-          <div className="mb-4 flex justify-center">
+          <div className="mb-6 flex justify-center">
             <img
               src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/picsvg_download%285%29-mKXFFQgAu3Yo2FbunDcKMlfJk8RZyW.svg"
               alt="Research Organization"
-              className="w-80 h-80 object-contain mb-2 rounded-t-lg"
+              className="w-[42%] min-w-[200px] max-w-[320px] object-contain"
             />
           </div>
-          <p className="mb-4">
+          <p className="mb-5 text-lg lg:text-xl">
             TabMark helps you organize your research efficiently. Save entire browser sessions with a single click and
             access them whenever you need.
           </p>
-          <p>
+          <p className="text-lg lg:text-xl">
             Our smart categorization system automatically groups related tabs, making it easier to find what you're
             looking for.
           </p>
@@ -98,18 +98,18 @@ export default function Signup() {
     {
       content: (
         <>
-          <div className="mb-4 flex justify-center">
+          <div className="mb-6 flex justify-center">
             <img
               src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/picsvg_download%284%29-MJVuszWkszyBYOFXjqym2Jx20wKPWo.svg"
               alt="Sharing Collections"
-              className="w-80 h-80 object-contain mb-2 rounded-t-lg"
+              className="w-[42%] min-w-[200px] max-w-[320px] object-contain"
             />
           </div>
-          <p className="mb-4">
+          <p className="mb-5 text-lg lg:text-xl">
             Share your collections with teammates or keep them private. TabMark syncs across all your devices so your
             bookmarks are always available.
           </p>
-          <p>
+          <p className="text-lg lg:text-xl">
             With our powerful search feature, finding that important article or resource you saved weeks ago is just a
             few keystrokes away.
           </p>
@@ -122,29 +122,37 @@ export default function Signup() {
     <>
       {/* Import Google Fonts */}
       <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@500;600;700&family=Lobster&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Jomhuria&family=Lobster&display=swap');
         
-        .font-kanit {
-          font-family: 'Kanit', sans-serif;
+        .font-jomhuria {
+          font-family: 'Jomhuria', cursive;
         }
         
         .font-lobster {
           font-family: 'Lobster', cursive;
         }
+
+        .font-kanit {
+          font-family: 'Kanit', sans-serif;
+        }
+
+        .text-shadow {
+          text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
       `}</style>
 
-      <div className="flex flex-col md:flex-row h-screen">
+      <div className="flex flex-col md:flex-row min-h-screen">
         {/* Left column with gradient background and rotating slides */}
-        <div className="w-full md:w-1/2 flex flex-col items-center justify-center text-center p-6 bg-gradient-to-r from-[#ff5f6d] to-[#ffc371] text-white">
-          <div className="max-w-md flex flex-col items-center">
-            {/* App title and tagline - with custom fonts and larger size */}
-            <div className="mb-8">
-              <h1 className="text-7xl font-bold text-white tracking-wide font-kanit mb-3 leading-tight">TabMark</h1>
-              <p className="text-3xl font-lobster">Bookmarks, But Smarter</p>
-            </div>
+        <div className="w-full md:w-1/2 flex flex-col items-center justify-start text-center p-10 bg-gradient-to-r from-[#ff5f6d] to-[#ffc371] text-white">
+          {/* Title and tagline moved to the top with negative margin */}
+          <div className="w-full max-w-md mt-4">
+            <h1 className="text-9xl font-bold mb-0 font-jomhuria tracking-wide text-shadow">TabMark</h1>
+            <p className="text-4xl font-lobster -mt-2">Bookmarks, But Smarter</p>
+          </div>
 
+          <div className="max-w-[85%] flex flex-col items-center mt-12">
             {/* Rotating slide content */}
-            <div className="min-h-[420px] flex items-center relative overflow-hidden">
+            <div className="min-h-[42vh] w-full flex items-center justify-center relative">
               <div
                 className={`slide-content w-full transition-opacity duration-500 ease-in-out ${
                   isTransitioning ? "opacity-0" : "opacity-100"
@@ -155,13 +163,13 @@ export default function Signup() {
             </div>
           </div>
 
-          {/* Slide indicators as buttons - made bigger */}
-          <div className="flex justify-center gap-3 mt-6">
+          {/* Slide indicators as buttons - keeping the same size */}
+          <div className="flex justify-center gap-4 mt-6">
             {[0, 1, 2].map((index) => (
               <button
                 key={index}
                 onClick={() => changeSlide(index)}
-                className={`h-2 rounded-full transition-all duration-300 cursor-pointer hover:opacity-100 ${
+                className={`h-3 rounded-full transition-all duration-300 cursor-pointer hover:opacity-100 ${
                   currentSlide === index ? "bg-white opacity-80 w-16" : "bg-white opacity-30 w-12 hover:opacity-50"
                 }`}
                 aria-label={`Go to slide ${index + 1}`}
@@ -170,9 +178,9 @@ export default function Signup() {
           </div>
         </div>
 
-        {/* Right column with signup form - made bigger */}
-        <div className="w-full md:w-1/2 flex items-center justify-center py-6 px-8 bg-[#f8eece]">
-          <div className="w-full max-w-lg">
+        {/* Right column with signup form */}
+        <div className="w-full md:w-1/2 flex items-center justify-center p-8 bg-[#f8eece]">
+          <div className="w-full max-w-[90%] lg:max-w-[70%]">
             <div className="flex flex-col items-center mb-8">
               {/* TabMark Logo */}
               <img
@@ -181,8 +189,8 @@ export default function Signup() {
                 className="w-20 h-20 text-[#ff9a8b] mb-6"
               />
 
-              <h2 className="text-4xl font-bold text-[#4a2b40] mb-2 font-kanit">Create an account</h2>
-              <p className="text-base text-gray-600 mt-1">
+              <h2 className="text-4xl font-bold text-purple-950 mb-3 font-Kanit">Create an account</h2>
+              <p className="text-lg text-gray-600 mt-1">
                 Already have an account?{" "}
                 <a href="/login" className="text-[#FF8C6B] hover:underline cursor-pointer">
                   Log in
@@ -190,8 +198,8 @@ export default function Signup() {
               </p>
             </div>
 
-            <form className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <form className="space-y-5">
+              <div className="grid grid-cols-2 gap-5">
                 <div>
                   <input
                     type="text"
@@ -286,10 +294,10 @@ export default function Signup() {
 
               <div className="relative flex items-center justify-center mt-6 mb-6">
                 <div className="border-t border-gray-300 w-full"></div>
-                <span className="bg-[#f8eece] px-4 text-sm text-gray-500 absolute">Or register with</span>
+                <span className="bg-[#f8eece] px-4 text-base text-gray-500 absolute">Or register with</span>
               </div>
 
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-2 gap-5">
                 <button
                   type="button"
                   className="flex items-center justify-center py-3 px-4 bg-white border border-gray-200 rounded-md hover:bg-gray-50 transition duration-200 text-base cursor-pointer"
@@ -336,3 +344,4 @@ export default function Signup() {
   )
 }
 
+  
