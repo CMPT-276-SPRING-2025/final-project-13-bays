@@ -22,25 +22,38 @@
     "pretest": "echo I am in pretest phase",
     "posttest": "echo I am in posttest phase"
   },
+  
   "repository": {
     "type": "git",
     "url": "git+https://github.com/CMPT-276-SPRING-2025/final-project-13-bays.git"
   },
+
   "keywords": [],
+
   "author": "",
+
   "license": "ISC",
+
   "bugs": {
     "url": "https://github.com/CMPT-276-SPRING-2025/final-project-13-bays/issues"
   },
+  
   "homepage": "https://github.com/CMPT-276-SPRING-2025/final-project-13-bays#readme",
+
   "devDependencies": {
     "jest": "^29.7.0",
     "supertest": "^7.1.0",
-    "concurrently": "^9.1.2"
+    "concurrently": "^9.1.2",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.3",
+    "postcss-loader": "^8.1.1",
+    "tailwindcss": "^4.0.16"
   },
+
   "dependencies": {
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "firebase": "^11.5.0"
+    "firebase": "^11.5.0",
+    "lucide-react": "^0.484.0"
   }
 }
