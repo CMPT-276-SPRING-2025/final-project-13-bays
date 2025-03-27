@@ -12,11 +12,17 @@ import {
   browserSessionPersistence,
   updateProfile,
   sendEmailVerification,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  signInWithEmailLink
 } from "firebase/auth"
 import { auth } from "../firebase-config.js"
 // import { getStorage, ref, upload}
-import { useNavigate } from "react-router-dom"
+import { useNavigate } from "react-router-dom"      
+import Swal from 'sweetalert2'// for really cool custom alerts - default were drab
+import { ToastContainer, toast } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
+
+// note : new imports always mess up prev dependencies/imports - have to look into this
 
 export default function Signup() {
   const navigate = useNavigate()
@@ -28,6 +34,7 @@ export default function Signup() {
   const [lastName, setLastName] = useState("")
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [profilePicture, setProfilePicture] = useState(null)
+  const [isForgotPasswordMode, setIsForgotPasswordMode] = useState(false)
 
   const signInWithGoogle = async () => {
     // need navigate hook from react-router-dom, only works in react coponents
@@ -36,9 +43,30 @@ export default function Signup() {
       const result = await signInWithPopup(auth, provider)
       const user = result.user
       console.log("User loggin in:", user.displayName)
-      navigate("/dashboard")
+      toast.success("Successfully logged in.", {
+        position: "top-center",
+        autoClose: 1000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "font-passion-one text-xl",
+        onClose: () => navigate("/dashboard")
+      })
     } catch (error) {
       console.error("Error logging in with Google:", error.message)
+      toast.error("Error logging in with Google. Please try again.", {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "font-passion-one text-xl",
+        style: { backgroundColor: "#f44336", color: "white" }
+      })
     }
   }
 
@@ -72,6 +100,18 @@ export default function Signup() {
     try {
       const result = await signInWithPopup(auth, provider);
       console.log("User logged in with GitHub:", result.user.displayName);
+      toast.success("Logged in successfully", {
+        position: "top-center",
+        autoClose: 1000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "font-passion-one text-xl",
+        onClose: () => navigate("/dashboard")
+      })
+      
       navigate("/dashboard");
     } catch (error) {
       console.error("GitHub auth error code:", error.code);
@@ -80,13 +120,43 @@ export default function Signup() {
         // Extract the email from the error
         const email = error.customData?.email;
         if (email) {
-          alert(`An account already exists with the email ${email}. Please sign in using that method first.`);
+          toast.error("An account already exists with the email ${email}. Please sign in using that method first.", {
+            position: "top-center",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "font-passion-one text-xl",
+            style: { backgroundColor: "#f44336", color: "white" }
+          })
         } else {
-          alert("An account already exists with a different sign-in method.");
+          toast.error("An account already exists with a different sign-in method.", {
+            position: "top-center",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "font-passion-one text-xl",
+            style: { backgroundColor: "#f44336", color: "white" }
+          })
         }
       } else {
         console.error("Error logging in with GitHub:", error.message);
-        alert("Unable to sign in with GitHub. Please try again later.");
+        toast.error("Unable to sign in with GitHub. Please try again later.", {
+          position: "top-center",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "font-passion-one text-xl",
+          style: { backgroundColor: "#f44336", color: "white" }
+        })
       }
     }
   };
@@ -95,14 +165,47 @@ export default function Signup() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/   // regex pattern to validate email
     if (!emailRegex.test(email)){
       setError("Invalid email format. Try again.")
+      toast.error("Invalid email format. Try again.", {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "font-passion-one text-xl",
+        style: { backgroundColor: "#f44336", color: "white" }
+      })
       return false
     }
     if(password.length < 8){
       setError("Password must be minimum 8 characters long. Try again.")
+      toast.error("Password must be minimum 8 characters long. Try again.", {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "font-passion-one text-xl",
+        style: { backgroundColor: "#f44336", color: "white" }
+      })
       return false
     }
-    if (!/[A-Z]/.test(password) && !/[a-z]/.test(password) && !/[0-9]/.test(password)){  // experimental
+    if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)){  // experimental
       setError("Password must contain an uppercase, lowercase and a number.")
+      toast.error("Password must contain an uppercase, lowercase and a number.", {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "font-passion-one text-xl",
+        style: { backgroundColor: "#f44336", color: "white" }
+      })
       return false
     }
     return true
@@ -119,7 +222,18 @@ export default function Signup() {
     }
 
     if (!termsAccepted){
-      setError("You must afree to the Terms & Conditions")
+      setError("You must agree to the Terms & Conditions to make an account")
+      toast.error("You must agree to the Terms & Conditions", {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "font-passion-one text-xl",
+        style: { backgroundColor: "#f44336", color: "white" }
+      })
       return
     }
 
@@ -127,6 +241,17 @@ export default function Signup() {
       const methods = await fetchSignInMethodsForEmail(auth, email)
       if (methods.length > 0){
         setError("An account with this email already exists. Please log in")
+        toast.error("An account with this email already exists. Please log in", {
+          position: "top-center",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "font-passion-one text-xl",
+          style: { backgroundColor: "#f44336", color: "white" }
+        })
         console.log("Email already exists")
         return
       }
@@ -141,13 +266,32 @@ export default function Signup() {
 
       await sendEmailVerification(user)
       console.log("Verification email sent")
-      alert("A verification email has been sent to your account")
-      navigate("/login")
+      toast.success("A verification email has been sent to your account", {
+        position: "top-center",
+        autoClose: 4000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "font-passion-one text-xl",
+      })
       await auth.signOut()
 
     } catch (error){
       console.error("Error creating account:", error.message)
       setError("Failed to create account. Please try again")
+      toast.error("Failed to create account. Please try again.", {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "font-passion-one text-xl",
+        style: { backgroundColor: "#f44336", color: "white" }
+      })
     }
   }
 
@@ -167,18 +311,48 @@ export default function Signup() {
 
       if (!user.emailVerified){
         setError("Please verify your email before logging in")
+        toast.error("Please verify your email before logging in.", {
+          position: "top-center",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "font-passion-one text-xl",
+          style: { backgroundColor: "#f44336", color: "white" }
+        })
         console.log("Email not verified")
         await auth.signOut()
         return
       }
-      alert("Account access verified")
 
       console.log("User logged in:", userCredential.user)
-      alert("Logged in successfully")
-      navigate("/dashboard")
+      toast.success("Login successful!", {
+        position: "top-center",
+        autoClose: 1000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "font-passion-one text-xl",
+        onClose: () => navigate("/dashboard")
+      })
     } catch(error){
       console.error("Error loggin in::", error.message)
       setError("Invalid email or password. Please try again")
+      toast.error("Invalid email or password", {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "font-passion-one text-xl",
+        style: { backgroundColor: "#f44336", color: "white" }
+      })
     }
   }
 
@@ -190,7 +364,11 @@ const handleProfilePictureUpload = (e) => {
   }
 }
 
-const handleForgotPassword = async () => {
+// (e) => {e.preventDefault()} IMPORTANT for many cases
+
+const handleForgotPassword = async (e) => {
+  e.preventDefault()
+
   if (!email){
     setError("Please enter your email address to reset your password")
     console.log("Email prompt")
@@ -199,13 +377,39 @@ const handleForgotPassword = async () => {
 
   try {
     await sendPasswordResetEmail(auth, email)
-    alert("A password reset email has been sent to your email address")
+    toast.success("A password reset email has been sent to your email address", {
+      position: "top-center",
+      autoClose: 4000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      className: "font-passion-one text-xl",
+    })
     console.log("Reset password mail sent")
+    resetForgotPasswordMode()
   } catch (error) {
     console.error("Error sending password reset email:", error.message)
+    toast.error("Failed to send password reset email. Please try again.", {
+      position: "top-center",
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      className: "font-passion-one text-xl",
+      style: { backgroundColor: "#f44336", color: "white" }
+    })
     setError("Failed to send password reset email. Please try again.");
   }
 }
+
+const resetForgotPasswordMode = () => {
+  setIsForgotPasswordMode(false)
+  setError("")
+};
 
   const [showPassword, setShowPassword] = useState(false)
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -378,6 +582,16 @@ const handleForgotPassword = async () => {
         }
       `}</style>
 
+      <ToastContainer 
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        closeOnClick
+        pauseOnHover
+        theme="light"
+        style={{ zIndex: 9999 }}
+      />
+
       <div className="flex flex-col md:flex-row min-h-screen">
         {/* Left column with gradient background and rotating slides */}
         <div className="w-full md:w-1/2 flex flex-col items-center justify-start text-center p-10 bg-gradient-to-r from-[#ff5f6d] to-[#ffc371] text-white">
@@ -456,18 +670,20 @@ const handleForgotPassword = async () => {
 
             {isLoginView ? (
               // Login Form
-              <form onSubmit={handleLogin} className="space-y-5">
-                <div>
-                  <input
-                    type="email"
-                    placeholder="Email"
-                    value={email}
-                    onChange = {(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8C6B] focus:border-transparent bg-white text-base"
-                    required
-                  />
-                </div>
+            <form onSubmit={isForgotPasswordMode ? handleForgotPassword : handleLogin} className="space-y-5">
+              <div>
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8C6B] focus:border-transparent bg-white text-base"
+                  required
+                />
+              </div>
 
+              {/* Conditionally render the password input */}
+              {!isForgotPasswordMode && (
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
@@ -517,22 +733,31 @@ const handleForgotPassword = async () => {
                     )}
                   </button>
                 </div>
+              )}
 
-                <div className="flex justify-end">
-                  <a href="#" onClick={(e) => {
-                    e.preventDefault()
-                    handleForgotPassword()}
-                  } className="text-sm text-[#FF8C6B] hover:underline">
-                    Forgot password?
-                  </a>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full py-3 px-4 bg-[#FF8C6B] hover:bg-[#ff7a55] text-white font-medium rounded-md transition duration-200 text-lg cursor-pointer"
+              <div className="flex justify-end">
+                {!isForgotPasswordMode && (
+                  <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setIsForgotPasswordMode(true)
+                    setError("")
+                  }}
+                  className="text-sm text-[#FF8C6B] hover:underline"
                 >
-                  Log in
-                </button>
+                  Forgot password?
+                </a>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3 px-4 bg-[#FF8C6B] hover:bg-[#ff7a55] text-white font-medium rounded-md transition duration-200 text-lg cursor-pointer"
+              >
+                {isForgotPasswordMode ? "Reset password" : "Log in"}
+              </button>
+
 
                 <div className="relative flex items-center justify-center mt-6 mb-6">
                   <div className="border-t border-gray-300 w-full"></div>

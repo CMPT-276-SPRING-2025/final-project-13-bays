@@ -19,7 +19,7 @@ import viteLogo from '/vite.svg'
 import './App.css'
 import Signup from "./components/Signup"
 import TestDashboard from "./components/TestDashboard"
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route } from "react-router-dom"
 
 
 function App() {
