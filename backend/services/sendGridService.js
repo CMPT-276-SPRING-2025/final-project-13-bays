@@ -9,8 +9,8 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);  // Use environment variable for
  */
 const sendEmail = async (to, subject, text) => {
   const msg = {
-    to: to, // Email from OAuth
-    from: 'support@tabmark.com', // Verified sender email on SendGrid
+    to: to, // Recipient Email Adress
+    from: 'tabmarkservices@gmail.com', // Verified sender email on SendGrid
     subject: subject,
     text: text, // Body of the email
   };
@@ -19,7 +19,7 @@ const sendEmail = async (to, subject, text) => {
     await sgMail.send(msg);
     console.log('Email sent successfully');
   } catch (error) {
-    console.error('Error sending email:', error);
+    console.error('Error sending email:', error.response ? error.response.body : error);
   }
 };
 
