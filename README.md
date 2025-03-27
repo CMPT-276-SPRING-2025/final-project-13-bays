@@ -4,14 +4,6 @@
 - **Group Number:** 13
 - **Group Name:** Bays
 
-## 👥 Team Members & Roles
-| Name              | Role                     | Contact Info (Optional) |
-|-------------------|--------------------------|-------------------------|
-| Nicholas Cho      | Project Manager          | nca91@sfu.ca            |
-| Dac Tri Ho        | Backend Architect        | dth10@sfu.ca            |
-| Fujai Shamshir    | Graphics/UI Designer     | fsa43@sfu.ca            |
-| Saad Ahmed Usmani | QA Tester                | sau1@sfu.ca             |
-
 ## 📝 Project Title
 **Tabmark**
 
