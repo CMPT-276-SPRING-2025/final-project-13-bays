@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+
 import {
   GoogleAuthProvider,
   GithubAuthProvider,
@@ -15,7 +16,16 @@ import {
   sendPasswordResetEmail,
   signInWithEmailLink
 } from "firebase/auth"
+
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  uploadBytesResumable
+} from "firebase/storage"
+
 import { auth } from "../firebase-config.js"
+import { storage } from "../firebase-config.js"
 // import { getStorage, ref, upload}
 import { useNavigate } from "react-router-dom"      
 import Swal from 'sweetalert2'// for really cool custom alerts - default were drab
@@ -120,7 +130,7 @@ export default function Signup() {
         // Extract the email from the error
         const email = error.customData?.email;
         if (email) {
-          toast.error("An account already exists with the email ${email}. Please sign in using that method first.", {
+          toast.error(`An account already exists with the email ${email}.`, {
             position: "top-center",
             autoClose: 3000,
             hideProgressBar: false,
@@ -258,10 +268,45 @@ export default function Signup() {
 
       const userCredential = await createUserWithEmailAndPassword(auth, email, password)
       const user = userCredential.user
+      
+  
       console.log("User created:", user)
+
+      let photoURL = null
+      if (profilePicture){
+        try{
+          toast.info("Uploading profile picture...", {
+            position: "top-center",
+            autoClose: false,
+            hideProgressBar: false,
+            closeOnClick: false,
+            pauseOnHover: true,
+            draggable: false,
+            progress: undefined,
+            className: "font-passion-one text-xl",
+          })
+          photoURL = await uploadProfilePicture(user.uid, profilePicture)
+          toast.dismiss()
+        } catch ( uploadError ){
+          console.error("Profile picture upload failed:", uploadError);
+          toast.error("Profile picture upload failed, but account was created", {
+            position: "top-center",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "font-passion-one text-xl",
+            style: { backgroundColor: "#f44336", color: "white" }
+          })
+        }
+      }
+
 
       await updateProfile(user, {
         displayName: `${firstName} ${lastName}`,
+        photoURL: photoURL,
       });
 
       await sendEmailVerification(user)
@@ -276,7 +321,9 @@ export default function Signup() {
         progress: undefined,
         className: "font-passion-one text-xl",
       })
+
       await auth.signOut()
+
 
     } catch (error){
       console.error("Error creating account:", error.message)
@@ -358,10 +405,75 @@ export default function Signup() {
 
 const handleProfilePictureUpload = (e) => {
   const file = e.target.files[0]
-  if(file){
-    setProfilePicture(file)
-    e.target.value = null       // clears input value to allow re-uploads of same file
+  if(!file){
+    return
   }
+
+  if (!file.type.match('image.*')){
+    setError("Pleast select an image file")
+    toast.error("Please select an image file", {
+      position: "top-center",
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      className: "font-passion-one text-xl",
+      style: { backgroundColor: "#f44336", color: "white" }
+    })
+    return
+  }
+
+  if (!file.size > (10 * 1024 * 1024)){   // bigger than 10 MB
+    setError("Profile picture must be less than 10MB")
+    toast.error("Profile picture must be less than 10MB", {
+      position: "top-center",
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      className: "font-passion-one text-xl",
+      style: { backgroundColor: "#f44336", color: "white" }
+    })
+    return
+  }
+
+  setProfilePicture(file)
+  e.target.value = null       // clears input value to allow re-uploads of same file
+}
+
+const uploadProfilePicture = async (userId, file) => {
+  if (!file){
+    return null
+  }
+
+  // creates storage reference
+  const storageRef = ref(storage, `profileImages/${userId}/${Date.now()}-${file.name}`)
+  // simply references a particular custom directory and file path name in the storage
+  const uploadTask = uploadBytesResumable(storageRef, file)
+  // uploads the file in question, i.e image hre, to that file path
+
+  return new Promise((resolve, reject) =>{
+    uploadTask.on(
+      "state_change",
+      (snapshot) => {
+        const progress = (snapshot.bytesTransferred/snapshot.totalBytes)
+        console.log(`Upload progress: ${progress.toFixed(2)}`)
+      },
+      (error) => {
+        console.error("Upload failed:", erorr)
+        reject(error)
+      },
+      async() => {
+        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref)
+        console.log("File available at:", downloadURL)
+        resolve(downloadURL)
+      }
+    )
+  })
 }
 
 // (e) => {e.preventDefault()} IMPORTANT for many cases
@@ -377,6 +489,7 @@ const handleForgotPassword = async (e) => {
 
   try {
     await sendPasswordResetEmail(auth, email)
+
     toast.success("A password reset email has been sent to your email address", {
       position: "top-center",
       autoClose: 4000,
@@ -903,7 +1016,7 @@ const resetForgotPasswordMode = () => {
                           alt="Profile Preview"
                           className="w-24 h-24 mx-auto rounded-full object-cover mb-2"
                         />
-                        {/* Red Cross Button */}
+                        {/*button to cancel out image*/}
                         <button
                           type="button"
                           className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600 transition"
