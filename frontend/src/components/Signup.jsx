@@ -171,51 +171,57 @@ export default function Signup() {
     }
   };
 
-  const validateInputs = () => {             // validates email and password
+  const validateInputs = (context) => {             // validates email and password
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/   // regex pattern to validate email
     if (!emailRegex.test(email)){
       setError("Invalid email format. Try again.")
-      toast.error("Invalid email format. Try again.", {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        className: "font-passion-one text-xl",
-        style: { backgroundColor: "#f44336", color: "white" }
-      })
+      if (context == "signup"){
+        toast.error("Invalid email format. Try again.", {
+          position: "top-center",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "font-passion-one text-xl",
+          style: { backgroundColor: "#f44336", color: "white" }
+        })
+      }
       return false
     }
     if(password.length < 8){
       setError("Password must be minimum 8 characters long. Try again.")
-      toast.error("Password must be minimum 8 characters long. Try again.", {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        className: "font-passion-one text-xl",
-        style: { backgroundColor: "#f44336", color: "white" }
-      })
+      if (context == "signup"){
+        toast.error("Password must be minimum 8 characters long. Try again.", {
+          position: "top-center",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "font-passion-one text-xl",
+          style: { backgroundColor: "#f44336", color: "white" }
+        })
+      }
       return false
     }
     if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)){  // experimental
       setError("Password must contain an uppercase, lowercase and a number.")
-      toast.error("Password must contain an uppercase, lowercase and a number.", {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        className: "font-passion-one text-xl",
-        style: { backgroundColor: "#f44336", color: "white" }
-      })
+      if (context == "signup"){
+        toast.error("Password must contain an uppercase, lowercase and a number.", {
+          position: "top-center",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "font-passion-one text-xl",
+          style: { backgroundColor: "#f44336", color: "white" }
+        })
+      }
       return false
     }
     return true
@@ -226,7 +232,7 @@ export default function Signup() {
     console.log("Signup form submitted");
     setError("")
 
-    if (!validateInputs()) {
+    if (!validateInputs("signup")) {  // calling in signup mode, so more extensive error messsages
       console.log("Validation failed")
       return
     }
@@ -249,7 +255,9 @@ export default function Signup() {
 
     try{  // check for if account with email already exists
       const methods = await fetchSignInMethodsForEmail(auth, email)
+      console.log("log check")
       if (methods.length > 0){
+        console.log("log check 2")
         setError("An account with this email already exists. Please log in")
         toast.error("An account with this email already exists. Please log in", {
           position: "top-center",
@@ -347,8 +355,19 @@ export default function Signup() {
     console.log("Login form submitted")
     setError("")
 
-    if (!validateInputs()) {
-      console.log("Validation failed")
+    if (!validateInputs("login")) {
+      console.log("Input validation failed")
+      toast.error("Input validation failed. Try again.", {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "font-passion-one text-xl",
+        style: { backgroundColor: "#f44336", color: "white" }
+      })
       return
     }
 
