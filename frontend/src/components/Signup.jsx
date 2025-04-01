@@ -62,7 +62,7 @@ export default function Signup() {
         draggable: true,
         progress: undefined,
         className: "font-passion-one text-xl",
-        onClose: () => navigate("/dashboard")
+        onClose: () => navigate("/home-page")
       })
     } catch (error) {
       console.error("Error logging in with Google:", error.message)
@@ -119,10 +119,10 @@ export default function Signup() {
         draggable: true,
         progress: undefined,
         className: "font-passion-one text-xl",
-        onClose: () => navigate("/dashboard")
+        onClose: () => navigate("/home-page")
       })
       
-      navigate("/dashboard");
+      navigate("/home-page");
     } catch (error) {
       console.error("GitHub auth error code:", error.code);
       
@@ -403,7 +403,7 @@ export default function Signup() {
         draggable: true,
         progress: undefined,
         className: "font-passion-one text-xl",
-        onClose: () => navigate("/dashboard")
+        onClose: () => navigate("/home-page")
       })
     } catch(error){
       console.error("Error loggin in::", error.message)
