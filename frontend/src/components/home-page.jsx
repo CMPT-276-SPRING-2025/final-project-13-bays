@@ -1,9 +1,15 @@
 "use client"
 
-import { useState } from "react"
+import { auth, storage } from "../firebase-config";
+import { useState, useEffect } from "react"
+import { ref, listAll, getDownloadURL } from "firebase/storage";
 import { Trash2, Menu, PlusCircle, AlertTriangle, X, Calendar, Clock, Check } from "lucide-react"
+import uploadProjectToFirebase from "./UploadProject"
 
 export default function HomePage() {
+  // Get user ID
+  const userId = auth.currentUser?.uid
+  
   // State for view mode (list or calendar)
   const [viewMode, setViewMode] = useState("list")
 
@@ -118,27 +124,47 @@ export default function HomePage() {
     setProjects(projects.map((project) => (project.id === id ? { ...project, progress: newProgress } : project)))
   }
 
-  // Function to add a new project - to the currently selected category
-  const addNewProject = () => {
-    if (newProject.name.trim() === "") return
+   // Function to add a new project - to the currently selected category
+   const addNewProject = () => {
+    if (newProject.name.trim() === "") {
+      toast.error("Project name cannot be empty!");
+      return;
+    }
+  
+    if (!userId) {
+      toast.error("User ID is missing. Please log in.");
+      return;
+    }
+  
+    const newId = Math.max(...projects.map((p) => p.id), 0) + 1;
+    const timeLeft = calculateTimeLeft(newProject.dueDate);
+    const isUrgent = isDueToday(newProject.dueDate);
+  
+    const projectData = {
+      id: newId,
+      name: newProject.name,
+      progress: 0,
+      timeLeft: timeLeft,
+      difficulty: newProject.difficulty,
+      category: selectedCategory, // Use the currently selected category
+      alert: isUrgent,
+      completed: false,
+    };
 
-    const newId = Math.max(...projects.map((p) => p.id), 0) + 1
-    const timeLeft = calculateTimeLeft(newProject.dueDate)
-    const isUrgent = isDueToday(newProject.dueDate)
+    // Add the project to the local state
+    setProjects([...projects, projectData]);
 
-    setProjects([
-      ...projects,
-      {
-        id: newId,
-        name: newProject.name,
-        progress: 0,
-        timeLeft: timeLeft,
-        difficulty: newProject.difficulty,
-        category: selectedCategory, // Use the currently selected category
-        alert: isUrgent,
-        completed: false,
+    // Call the Firebase upload function
+    uploadProjectToFirebase({
+      userId,
+      projectData,
+      onSuccess: () => {
+        console.log("Project uploaded successfully!");
       },
-    ])
+      onError: (error) => {
+        console.error("Error uploading project:", error);
+      },
+    });
 
     // Reset form and close modal
     setNewProject({
@@ -282,7 +308,7 @@ export default function HomePage() {
     { id: "Trivial", name: "Trivial", color: "bg-green-500" },
     { id: "Archived", name: "Archived", color: "bg-gray-400" },
   ]
-
+  
   return (
     <div className="min-h-screen bg-white">
       {/* Header/Navigation */}
