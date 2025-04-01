@@ -2,9 +2,29 @@
 
 import { useState } from "react"
 import { Trash2, Menu, PlusCircle, AlertTriangle, X, Calendar, Clock, Check } from "lucide-react"
+import { auth } from "../firebase-config.js"
+import { useNavigate } from "react-router-dom"
 
 export default function HomePage() {
   // State for view mode (list or calendar)
+  
+    // const [user, setUser] = useState(null)
+    // const navigate = useNavigate()
+  
+    // // Check if the user is logged in
+    // useEffect(() => {
+    //   const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    //     if (currentUser) {
+    //       setUser(currentUser)
+    //     } else {
+    //       // Redirect to the signup page if not logged in
+    //       navigate("/signup")
+    //     }
+    //   })
+  
+    //   return () => unsubscribe() // Cleanup the listener on unmount
+    // }, [navigate])
+
   const [viewMode, setViewMode] = useState("list")
 
   // State for selected category - now defaulting to "Urgent"
