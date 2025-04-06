@@ -1,7 +1,6 @@
 "use client"
 
-import { useEffect, useState, useEffect} from "react"
-import { Trash2, Menu, PlusCircle, AlertTriangle, X, Calendar, Clock, Check } from "lucide-react"
+import { useEffect, useState, useRef} from "react"
 import { auth, storage } from "../firebase-config.js"
 import { useNavigate } from "react-router-dom"
 import { onAuthStateChanged, signOut, updateProfile } from "firebase/auth"
@@ -10,6 +9,7 @@ import 'react-toastify/dist/ReactToastify.css'
 import { handleProfilePictureUpload, uploadProfilePicture } from "../utils/profilePictureUtils.js"
 import {Trash2, Menu, PlusCircle, AlertTriangle, X, Calendar, Clock,
   Check, Plus, Briefcase, User, Book, Search, Heart,} from "lucide-react"
+import "../styles/globalfonts.css"
 
 // helper function for name reformat
 function formatFullName(name) {
@@ -845,13 +845,13 @@ export default function HomePage() {
     if (selectedUserCategory && selectedSystemCategory) {
       const userCategory = projectCategories.find((cat) => cat.id === selectedUserCategory)
       const systemCategory = systemCategories.find((cat) => cat.id === selectedSystemCategory)
-      return `${systemCategory?.name} Projects in ${userCategory?.name}`
+      return userCategory ? userCategory.name : ""
     } else if (selectedUserCategory) {
       const category = projectCategories.find((cat) => cat.id === selectedUserCategory)
       return category ? category.name : ""
     } else if (selectedSystemCategory) {
       const category = systemCategories.find((cat) => cat.id === selectedSystemCategory)
-      return category ? `${category.name} Projects` : ""
+      return "All Projects"
     }
     return "All Projects"
   }
@@ -1014,7 +1014,7 @@ export default function HomePage() {
         >
           <div className="p-6">
             <div className="flex justify-between items-center mb-8">
-              <h2 className="text-xl font-bold text-[#FF8C6B]">TabMark</h2>
+              <h2 className="text-5xl font-jomhuria font-bold text-[#FF8C6B]">TabMark</h2>
               <button onClick={() => setIsMenuOpen(false)} className="text-gray-500 hover:text-gray-700">
                 <X size={20} />
               </button>
@@ -1181,6 +1181,7 @@ export default function HomePage() {
         {/* Header/Navigation */}
         <header className="bg-[#FF8C6B] shadow-sm">
           <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 py-5 flex justify-between items-center">
+            {/* Left Section: Menu and Title */}
             <div className="flex items-center w-1/3">
               <button
                 className="p-2 rounded-md text-white hover:bg-white/20 focus:outline-none menu-button"
@@ -1188,7 +1189,7 @@ export default function HomePage() {
               >
                 <Menu size={28} />
               </button>
-              <h2 className="text-xl font-bold font-jomhuria-regular text-white ml-2 mr-4">TabMark</h2>
+              <h2 className="text-5xl font-bold font-jomhuria text-white ml-2 mr-4 mt-1 leading-none tracking-wide">TabMark</h2>
               <button className="ml-2 px-3 py-1 bg-white/20 hover:bg-white/30 rounded-md flex items-center justify-center text-white font-medium transition-colors">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -1210,7 +1211,7 @@ export default function HomePage() {
               </button>
             </div>
 
-            {/* Center view toggle buttons with animation - Improved design */}
+            {/* Center Section: View Toggle Buttons */}
             <div className="flex items-center justify-center space-x-4 bg-[#FF8C6B] p-1 rounded-lg w-1/3">
               <button
                 onClick={() => changeViewMode("list")}
@@ -1264,23 +1265,27 @@ export default function HomePage() {
               </button>
             </div>
 
-            <div className="flex flex-col items-center">
-                
-                {user ? (
-                    <span className="font-chela-one-regular text-lg mt-8">{formatDisplayName(user.displayName)}</span>
-                  ) : (
-                    <span className="font-chela-one-regular text-lg mt-8">Loading...</span>
-                )}
-
+            {/* Right Section: Profile and Logout */}
+            <div className="flex items-center justify-end w-1/3 space-x-12">
+              {/* Profile Section */}
+              <span className="flex items-center space-x-4">
                 {user && user.photoURL ? (
                   <img
-                    src={user.photoURL || "/placeholder.svg"}
+                    src={user.photoURL}
                     alt={`${user.displayName}'s profile`}
-                    className="w-16 h-16 rounded-full mt-1"
+                    className="w-12 h-12 rounded-full"
                   />
                 ) : (
-                  <div className="w-16 h-16 mt-1 rounded-full flex items-center justify-center bg-gray-200">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" onClick={() => document.getElementById("profilePictureInput").click()} className="cursor-pointer">
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center bg-gray-200">
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      onClick={() => document.getElementById("profilePictureInput").click()}
+                      className="cursor-pointer"
+                    >
                       <circle
                         cx="12"
                         cy="8"
@@ -1303,26 +1308,27 @@ export default function HomePage() {
                       type="file"
                       accept="image/*"
                       className="hidden"
-                      onChange={(e) => handleProfilePictureUpload(e, setProfilePicture)} // using the utility function
+                      onChange={(e) => handleProfilePictureUpload(e, setProfilePicture)}
                     />
-                    {profilePicture && (   // save button for profile pic upload
-                      <button
-                        onClick={uploadHelper()}
-                        className="absolute bottom-0 right-0 bg-blue-500 text-white px-2 py-1 rounded-md text-sm hover:bg-blue-600 hidden"
-                      >
-                        Save
-                      </button>
-                    )}
                   </div>
                 )}
 
-                <button 
-                  onClick={handleLogout} 
-                  className="mt-4 px-2 py-1 bg-red-500 text-white text-lg font-passion-one rounded-md hover:bg-red-600">
-                  Logout
-                </button>
-              </div>
+                {user ? (
+                  <span className="font-chela-one-regular text-white text-lg">{formatDisplayName(user.displayName)}</span>
+                ) : (
+                  <span className="font-chela-one-regular text-white text-lg">Loading...</span>
+                )}
+              </span>
+
+              {/* Logout Button */}
+              <button
+                onClick={handleLogout}
+                className="px-4 py-2 bg-red-500 text-white text-sm font-passion-one font-medium rounded-md hover:bg-red-600"
+              >
+                Logout
+              </button>
             </div>
+          </div>
         </header>
 
         {/* Main Content */}
@@ -1330,18 +1336,18 @@ export default function HomePage() {
           {/* Display current category name only when a category is selected */}
           {(selectedSystemCategory || selectedUserCategory || (!selectedSystemCategory && !selectedUserCategory)) && (
             <div className="mb-8 text-center">
-              <h1 className="text-3xl font-lobster font-bold text-[#3B0764]">{getCurrentCategoryName()}</h1>
-              {selectedUserCategory && selectedSystemCategory && (
+              <h1 className="text-4xl font-passion-one font-bold text-[#3B0764]">{getCurrentCategoryName()}</h1>
+              {/* {selectedUserCategory && selectedSystemCategory && (
                 <p className="text-gray-500 font-lobster mt-2">
                   Viewing {selectedSystemCategory} projects in{" "}
                   {projectCategories.find((c) => c.id === selectedUserCategory)?.name}
                 </p>
-              )}
+              )} */}
             </div>
           )}
 
           {/* Category Boxes - Always visible */}
-          <div className="flex justify-center mb-10">
+          <div className="flex justify-center mb-12 mt-12">
             <div className="flex space-x-12">
               {systemCategories.map((category) => (
                 <div
@@ -1353,15 +1359,15 @@ export default function HomePage() {
                   }}
                 >
                   <span
-                    className={`mb-4 font-medium ${selectedSystemCategory === category.id ? "text-3xl font-bold" : "text-2xl"} text-[#3B0764]`}
+                    className={`mb-4 font-medium ${selectedSystemCategory === category.id ? "text-3xl font-bold" : "text-2xl"} font-lobster text-[#3B0764]`}
                   >
                     {category.name}
                   </span>
                   <div
                     className={`${category.color} rounded-md transition-all duration-200`}
                     style={{
-                      width: selectedSystemCategory === category.id ? "60px" : "50px",
-                      height: selectedSystemCategory === category.id ? "36px" : "30px",
+                      width: selectedSystemCategory === category.id ? "70px" : "60px",
+                      height: selectedSystemCategory === category.id ? "46px" : "40px",
                     }}
                   ></div>
                 </div>
@@ -1371,9 +1377,9 @@ export default function HomePage() {
 
           {/* Welcome message when no category is selected */}
           {!selectedSystemCategory && !selectedUserCategory && (
-            <div className="text-center py-8 mb-8">
-              <h2 className="text-2xl font-bold text-[#FF8C6B] mb-3">Welcome to TabMark</h2>
-              <p className="text-purple-950 max-w-2xl mx-auto">
+            <div className="text-center py-8 mb-1">
+              <h2 className="text-6xl font-jomhuria tracking-wide font-bold text-[#FF8C6B] mb-3">Welcome to TabMark</h2>
+              <p className="text-lg text-purple-950 max-w-xl mx-auto font-chela-one-regular">
                 Select one of the categories above to see your projects sorted by urgency. You can also create custom
                 categories from the menu on the left.
               </p>
@@ -1398,10 +1404,10 @@ export default function HomePage() {
                 {/* Project Table Header */}
                 <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-[#f8eece] border-b border-[#e6d6a6] mb-2 rounded-t-lg">
                   <div className="col-span-1"></div>
-                  <div className="col-span-3 font-medium text-[#3B0764] text-base">Project (Window) Name</div>
-                  <div className="col-span-3 font-medium text-[#3B0764] text-base">Progress Bar</div>
-                  <div className="col-span-2 font-medium text-[#3B0764] text-base">Time Left</div>
-                  <div className="col-span-2 font-medium text-[#3B0764] text-base">Difficulty</div>
+                  <div className="col-span-3 font-medium text-[#3B0764] text-base font-passion-one">Project (Window) Name</div>
+                  <div className="col-span-3 font-medium text-[#3B0764] text-base font-passion-one">Progress Bar</div>
+                  <div className="col-span-2 font-medium text-[#3B0764] text-base font-passion-one">Time Left</div>
+                  <div className="col-span-2 font-medium text-[#3B0764] text-base font-passion-one">Difficulty</div>
                   <div className="col-span-1"></div>
                 </div>
 
@@ -1649,11 +1655,11 @@ export default function HomePage() {
                           />
                         </svg>
                       </div>
-                      <h3 className="text-xl font-medium text-[#FF8C6B] mb-2">No projects yet</h3>
-                      <p className="text-gray-500 mb-4">Get started by creating your first project</p>
+                      <h3 className="text-xl font-nova-square-regular font-medium text-[#FF8C6B] mb-2">No projects yet</h3>
+                      <p className="text-gray-500 mb-4 font-chela-one-regular">Get started by creating your first project!</p>
                       <button
                         onClick={() => setShowNewProjectModal(true)}
-                        className="px-4 py-2 bg-[#FF8C6B] text-white rounded-md hover:bg-[#ff7a55]"
+                        className="px-4 py-2 bg-[#FF8C6B] text-white font-abril-fatface rounded-md hover:bg-[#ff7a55]"
                       >
                         Create Project
                       </button>

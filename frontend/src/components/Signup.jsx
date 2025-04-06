@@ -32,6 +32,7 @@ import { useNavigate } from "react-router-dom"
 import Swal from 'sweetalert2'// for really cool custom alerts - default were drab
 import { ToastContainer, toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
+import "../styles/globalfonts.css"
 
 // note : new imports always mess up prev dependencies/imports - have to look into this
 
@@ -751,6 +752,7 @@ const resetForgotPasswordMode = () => {
         theme="light"
         style={{ zIndex: 9999 }}
       />
+      
 
       <div className="flex flex-col md:flex-row min-h-screen">
         {/* Left column with gradient background and rotating slides */}
