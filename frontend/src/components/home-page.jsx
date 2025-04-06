@@ -1,17 +1,40 @@
 "use client"
 
-import { auth, storage } from "../firebase-config";
+import { auth, db } from "../firebase-config";
+import { collection, getDocs } from "firebase/firestore";
 import { useState, useEffect } from "react"
-import { ref, listAll, getDownloadURL } from "firebase/storage";
 import { Trash2, Menu, PlusCircle, AlertTriangle, X, Calendar, Clock, Check } from "lucide-react"
-import uploadProjectToFirebase from "./UploadProject"
-import { auth } from "../firebase-config.js"
-import { useNavigate } from "react-router-dom"
+import uploadProjectToFirestore from "./UploadProject"
 
 export default function HomePage() {
   // Get user ID
   const userId = auth.currentUser?.uid
   
+  const [projects, setProjects] = useState([]); // Ensure this state is defined
+
+  // Fetch projects from Firestore
+  useEffect(() => {
+    if (userId) {
+      const fetchProjects = async () => {
+        try {
+          const userProjectsRef = collection(db, `projects/${userId}/userProjects`);
+          const querySnapshot = await getDocs(userProjectsRef);
+  
+          const fetchedProjects = querySnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+  
+          setProjects(fetchedProjects);
+        } catch (error) {
+          console.error("Error fetching projects from Firestore:", error);
+        }
+      };
+  
+      fetchProjects();
+    }
+  }, [userId]);
+
   // State for view mode (list or calendar)
   
     // const [user, setUser] = useState(null)
@@ -56,55 +79,55 @@ export default function HomePage() {
   const [showCompletionConfirm, setShowCompletionConfirm] = useState(false)
   const [projectToComplete, setProjectToComplete] = useState(null)
 
-  // Sample project data - Archived section starts empty
-  const [projects, setProjects] = useState([
-    {
-      id: 1,
-      name: "Learning TypeScript",
-      progress: 60,
-      timeLeft: "5 days left",
-      difficulty: "Easy",
-      category: "Upcoming",
-      completed: false,
-    },
-    {
-      id: 2,
-      name: "CMPT 210 Assignment 3",
-      progress: 20,
-      timeLeft: "2 weeks left",
-      difficulty: "Hard",
-      category: "Upcoming",
-      completed: false,
-    },
-    {
-      id: 3,
-      name: "Personal Portfolio Project",
-      progress: 75,
-      timeLeft: "2 days left",
-      difficulty: "Easy",
-      category: "Close",
-      completed: false,
-    },
-    {
-      id: 4,
-      name: "CyberSecurity Course",
-      progress: 90,
-      timeLeft: "Today 23:59",
-      difficulty: "Medium",
-      category: "Urgent",
-      alert: true,
-      completed: false,
-    },
-    {
-      id: 5,
-      name: "Cache Simulator",
-      progress: 0,
-      timeLeft: "1 week left",
-      difficulty: "Hard",
-      category: "Trivial",
-      completed: false,
-    },
-  ])
+  // // Sample project data - Archived section starts empty
+  // const [projects, setProjects] = useState([
+  //   {
+  //     id: 1,
+  //     name: "Learning TypeScript",
+  //     progress: 60,
+  //     timeLeft: "5 days left",
+  //     difficulty: "Easy",
+  //     category: "Upcoming",
+  //     completed: false,
+  //   },
+  //   {
+  //     id: 2,
+  //     name: "CMPT 210 Assignment 3",
+  //     progress: 20,
+  //     timeLeft: "2 weeks left",
+  //     difficulty: "Hard",
+  //     category: "Upcoming",
+  //     completed: false,
+  //   },
+  //   {
+  //     id: 3,
+  //     name: "Personal Portfolio Project",
+  //     progress: 75,
+  //     timeLeft: "2 days left",
+  //     difficulty: "Easy",
+  //     category: "Close",
+  //     completed: false,
+  //   },
+  //   {
+  //     id: 4,
+  //     name: "CyberSecurity Course",
+  //     progress: 90,
+  //     timeLeft: "Today 23:59",
+  //     difficulty: "Medium",
+  //     category: "Urgent",
+  //     alert: true,
+  //     completed: false,
+  //   },
+  //   {
+  //     id: 5,
+  //     name: "Cache Simulator",
+  //     progress: 0,
+  //     timeLeft: "1 week left",
+  //     difficulty: "Hard",
+  //     category: "Trivial",
+  //     completed: false,
+  //   },
+  // ])
 
   // Function to delete a project with confirmation
   const initiateDelete = (id) => {
@@ -175,7 +198,7 @@ export default function HomePage() {
     setProjects([...projects, projectData]);
 
     // Call the Firebase upload function
-    uploadProjectToFirebase({
+    uploadProjectToFirestore({
       userId,
       projectData,
       onSuccess: () => {
