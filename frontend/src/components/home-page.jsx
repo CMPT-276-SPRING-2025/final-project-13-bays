@@ -5,35 +5,15 @@ import { collection, getDocs } from "firebase/firestore";
 import { useState, useEffect } from "react"
 import { Trash2, Menu, PlusCircle, AlertTriangle, X, Calendar, Clock, Check } from "lucide-react"
 import uploadProjectToFirestore from "./UploadProject"
+import FetchProjectsFromFirestore from "./FetchProjects";
+import deleteProjectFromFirestore from "./DeleteProject";
+import modifyProjectInFirestore from "./ModifyProject";
 
 export default function HomePage() {
   // Get user ID
   const userId = auth.currentUser?.uid
   
   const [projects, setProjects] = useState([]); // Ensure this state is defined
-
-  // Fetch projects from Firestore
-  useEffect(() => {
-    if (userId) {
-      const fetchProjects = async () => {
-        try {
-          const userProjectsRef = collection(db, `projects/${userId}/userProjects`);
-          const querySnapshot = await getDocs(userProjectsRef);
-  
-          const fetchedProjects = querySnapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }));
-  
-          setProjects(fetchedProjects);
-        } catch (error) {
-          console.error("Error fetching projects from Firestore:", error);
-        }
-      };
-  
-      fetchProjects();
-    }
-  }, [userId]);
 
   // State for view mode (list or calendar)
   
@@ -79,56 +59,6 @@ export default function HomePage() {
   const [showCompletionConfirm, setShowCompletionConfirm] = useState(false)
   const [projectToComplete, setProjectToComplete] = useState(null)
 
-  // // Sample project data - Archived section starts empty
-  // const [projects, setProjects] = useState([
-  //   {
-  //     id: 1,
-  //     name: "Learning TypeScript",
-  //     progress: 60,
-  //     timeLeft: "5 days left",
-  //     difficulty: "Easy",
-  //     category: "Upcoming",
-  //     completed: false,
-  //   },
-  //   {
-  //     id: 2,
-  //     name: "CMPT 210 Assignment 3",
-  //     progress: 20,
-  //     timeLeft: "2 weeks left",
-  //     difficulty: "Hard",
-  //     category: "Upcoming",
-  //     completed: false,
-  //   },
-  //   {
-  //     id: 3,
-  //     name: "Personal Portfolio Project",
-  //     progress: 75,
-  //     timeLeft: "2 days left",
-  //     difficulty: "Easy",
-  //     category: "Close",
-  //     completed: false,
-  //   },
-  //   {
-  //     id: 4,
-  //     name: "CyberSecurity Course",
-  //     progress: 90,
-  //     timeLeft: "Today 23:59",
-  //     difficulty: "Medium",
-  //     category: "Urgent",
-  //     alert: true,
-  //     completed: false,
-  //   },
-  //   {
-  //     id: 5,
-  //     name: "Cache Simulator",
-  //     progress: 0,
-  //     timeLeft: "1 week left",
-  //     difficulty: "Hard",
-  //     category: "Trivial",
-  //     completed: false,
-  //   },
-  // ])
-
   // Function to delete a project with confirmation
   const initiateDelete = (id) => {
     setProjectToDelete(id)
@@ -137,11 +67,21 @@ export default function HomePage() {
 
   const confirmDelete = () => {
     if (projectToDelete !== null) {
-      setProjects(projects.filter((project) => project.id !== projectToDelete))
-      setShowDeleteConfirm(false)
-      setProjectToDelete(null)
+      deleteProjectFromFirestore({
+        userId,
+        projectId: projectToDelete.toString(),
+        onSuccess: () => {
+          // Remove the project from local state
+          setProjects(projects.filter((project) => project.id !== projectToDelete));
+          setShowDeleteConfirm(false);
+          setProjectToDelete(null);
+        },
+        onError: (error) => {
+          console.error("Error deleting project:", error);
+        },
+      });
     }
-  }
+  };
 
   // Function to initiate project completion
   const initiateCompletion = (id) => {
@@ -164,8 +104,26 @@ export default function HomePage() {
 
   // Function to update project progress
   const updateProgress = (id, newProgress) => {
-    setProjects(projects.map((project) => (project.id === id ? { ...project, progress: newProgress } : project)))
-  }
+    // Update the local state
+    setProjects(
+      projects.map((project) =>
+        project.id === id ? { ...project, progress: newProgress } : project
+      )
+    );
+  
+    // Update the project in Firestore
+    modifyProjectInFirestore({
+      userId,
+      projectId: id.toString(),
+      updatedData: { progress: newProgress },
+      onSuccess: () => {
+        console.log("Progress updated successfully in Firestore!");
+      },
+      onError: (error) => {
+        console.error("Error updating progress in Firestore:", error);
+      },
+    });
+  };
 
    // Function to add a new project - to the currently selected category
    const addNewProject = () => {
@@ -354,6 +312,11 @@ export default function HomePage() {
   
   return (
     <div className="min-h-screen bg-white">
+      {/* Fetch projects from Firestore */}
+      <FetchProjectsFromFirestore
+        userId={userId}
+        onProjectsFetched={(fetchedProjects) => setProjects(fetchedProjects)}
+      />
       {/* Header/Navigation */}
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 py-5 flex justify-between items-center">
