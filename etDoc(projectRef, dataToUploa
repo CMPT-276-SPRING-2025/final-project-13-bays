@@ -1,0 +1,71 @@
+[33me6fdf6e[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfrontTestTree1[m[33m)[m feat: added saving archived status on db
+[33m43d13e7[m[33m ([m[1;31morigin/frontTestTree1[m[33m)[m feat: added deleting and saving modifcations (only progressbar right now) for the db
+[33mc791fb1[m feat: added uploading and fetching from firestore for userProjects
+[33m8871627[m Merge branch 'frontendFix' into frontTestTree1
+[33m86c3aa5[m[33m ([m[1;31morigin/frontendFix[m[33m, [m[1;32mfrontendFix[m[33m)[m Small bug fixes
+[33m83ca606[m[33m ([m[1;31morigin/createNewProj[m[33m, [m[1;32mcreateNewProj[m[33m)[m feat: added the function to upload all the project data onto the firebase storage
+[33me3bbbe8[m Added homepage/dashboard draft
+[33mac4a76a[m Fixed error messages for login validation
+[33m3502091[m Added profile photo system - configured and tested FB storage
+[33m4a34907[m Merging into public repo - AI forms gone
+[33m606f73b[m Delete docs/ai-disclosure directory
+[33mc980ed8[m Update README.md to remove names and ID
+[33mf31be4a[m Added profile picture storage system (Fixed issue)
+[33m649815a[m[33m ([m[1;32mfrontend-ui[m[33m)[m More UI tweaks, added cooler-looking alert system
+[33mf8d77b7[m Major changes made, signup/login page almost complete
+[33m14e03c5[m Fixed dome design issues with spacing and color
+[33m1284e11[m Fixed sizing issues with webpage
+[33m9f5cf46[m Fixed some UI bugs
+[33m6230c45[m Changed title of website to TabMark
+[33m89346de[m Uploaded almost complete version of the login page with added images, buttons and changed fonts
+[33m9cb1427[m Created first draft for Login Page
+[33mcc3e873[m[33m ([m[1;31morigin/frontend[m[33m)[m Empty React src folders fixed
+[33m9b2a5ae[m Updates made to file structure, React app and Express server init
+[33mbf89c24[m More changes made to file structure, React app created, server initialized
+[33m6f4a4bf[m Update build.yml with more descriptive names
+[33mc9826fe[m Update build.yml with some name changes
+[33m451ecd2[m Added Placeholder Scripts for package.json
+[33m5e7ae17[m Add package.json
+[33m09005f7[m Merge branch 'main' of github.com:CMPT-276-SPRING-2025/final-project-13-bays
+[33mfff0773[m Add package-lock.json
+[33mb3bd021[m Create build.yml
+[33me70e0b2[m Major update to file dir structure - added template code
+[33ma14e02c[m Major update to file dir structure - added template code
+[33md344f24[m Create super-linter.yml
+[33m6719b32[m docs: updated AI Forms file names for P1
+[33m57ac990[m Added AI form for video presentation - Fujai
+[33ma603a49[m docs: updated some files name for AI forms
+[33m3d846f8[m docs: added P1_Video for Dac Tri Ho 301577052
+[33m4c3e4ae[m Added AI forms for Fujai Shamshir
+[33mf5bbeb1[m docs: added P1_Report for Dac Tri Ho 301577052
+[33m5fb2b4a[m Merge branch 'main' of https://github.com/CMPT-276-SPRING-2025/final-project-13-bays
+[33m9c43562[m added Nicholas's AI declaration form for Milestone 1 - Video
+[33m72f9e94[m Added AI forms for Saad Usmani
+[33me55057a[m Added Nicholas' AI Declaration form for Milestone 1.
+[33me2b20c6[m Merge branch 'main' of github.com:CMPT-276-SPRING-2025/final-project-13-bays
+[33m8a55785[m docs: added pictures for MVC
+[33m51ad2a2[m docs: added AI Disclosure form for Saad Usmani
+[33m4286aa0[m added AI delcaration form by Nicholas Cho
+[33m04d917e[m docs: added AI disclosure form for Fujai Shamshir (301559099)
+[33m6cdf00b[m docs: added AI Disclosure for Tri Ho (301577052)
+[33m24aefde[m docs: updated the main README.md
+[33mab8e125[m README tweaked, misc folder added
+[33m408a686[m Tweaked README, added misc directory
+[33m291b098[m docs: added folders for testing and utilities
+[33m46ac23f[m Update README.md
+[33m2c2166f[m Merge branch 'main' of github.com:CMPT-276-SPRING-2025/final-project-13-bays
+[33mb111097[m docs: added documentation folders
+[33m900a7e3[m Update README.md: added list of API’s
+[33mce7e26c[m Filled in project details in README.md
+[33m6b5e6ba[m docs: removed proposal folder
+[33m14cf491[m docs: added proposal folder for proposals
+[33mda71866[m docs: removed finals to restart with proper commit etiquette
+[33m187a52a[m Create README.md
+[33maec66bf[m docs: removed files to restart with proper commit etiquette
+[33mfed4960[m docs: removed proposal file as README.md was not included in the file
+[33m2792f46[m feat: Created file for final documentation
+[33m856d89d[m Create README.md
+[33m7558707[m Update README file with the template generated using ChatGPT
+[33m56f6451[m Create proposal
+[33mca58e48[m Update README.md with the template provided
+[33mcd046e6[m add online IDE url
