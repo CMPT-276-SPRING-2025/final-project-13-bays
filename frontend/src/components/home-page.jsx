@@ -79,9 +79,9 @@ export default function HomePage() {
         onError: (error) => {
           console.error("Error deleting project:", error);
         },
-      });
+      })
     }
-  };
+  }
 
   // Function to initiate project completion
   const initiateCompletion = (id) => {
@@ -92,13 +92,31 @@ export default function HomePage() {
   // Function to confirm project completion and move to Archived
   const confirmCompletion = () => {
     if (projectToComplete !== null) {
+      // Update the local state
       setProjects(
         projects.map((project) =>
-          project.id === projectToComplete ? { ...project, category: "Archived", completed: true } : project,
-        ),
-      )
-      setShowCompletionConfirm(false)
-      setProjectToComplete(null)
+          project.id === projectToComplete
+            ? { ...project, category: "Archived", completed: true }
+            : project
+        )
+      );
+  
+      // Update the project in Firestore
+      modifyProjectInFirestore({
+        userId,
+        projectId: projectToComplete.toString(),
+        updatedData: { category: "Archived", completed: true },
+        onSuccess: () => {
+          console.log("Project marked as completed and updated in Firestore!");
+        },
+        onError: (error) => {
+          console.error("Error updating project completion in Firestore:", error);
+        },
+      });
+  
+      // Close the confirmation modal
+      setShowCompletionConfirm(false);
+      setProjectToComplete(null);
     }
   }
 
