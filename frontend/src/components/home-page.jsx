@@ -1,29 +1,104 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Trash2, Menu, PlusCircle, AlertTriangle, X, Calendar, Clock, Check } from "lucide-react"
-import { auth } from "../firebase-config.js"
+import { auth, storage } from "../firebase-config.js"
 import { useNavigate } from "react-router-dom"
+import { onAuthStateChanged, signOut, updateProfile } from "firebase/auth"
+import { ToastContainer, toast } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
+import { handleProfilePictureUpload, uploadProfilePicture } from "../utils/profilePictureUtils.js"
+
+// helper function for name reformat
+function formatFullName(name) {
+  if (!name) {
+      return ""
+  } else {
+      return name.split(" ").map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(" ")
+  } // splits all the diff names i.e first, middle, last, then formats them and joins back together
+}
+
+function formatDisplayName(name) {
+  if (!name) {
+      return ""
+  } else {
+      return name.split(" ")[0].charAt(0).toUpperCase() + name.split(" ")[0].slice(1).toLowerCase()
+  }
+}
 
 export default function HomePage() {
   // State for view mode (list or calendar)
   
-    // const [user, setUser] = useState(null)
-    // const navigate = useNavigate()
   
-    // // Check if the user is logged in
-    // useEffect(() => {
-    //   const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-    //     if (currentUser) {
-    //       setUser(currentUser)
-    //     } else {
-    //       // Redirect to the signup page if not logged in
-    //       navigate("/signup")
-    //     }
-    //   })
-  
-    //   return () => unsubscribe() // Cleanup the listener on unmount
-    // }, [navigate])
+  const [user, setUser] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [profilePicture, setProfilePicture] = useState(null)
+  const navigate = useNavigate()
+
+  // console.log("yoo ?")
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+      } else {
+        setUser(null)
+        navigate("/sign-up"); // Move navigate() inside useEffect
+      }
+      setLoading(false)
+    })},[navigate]);
+
+  // const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+  //   if (currentUser) {
+  //     setUser(currentUser)
+  //     console.log("User is logged in:", currentUser.displayName)
+  //   } else {
+  //     // setUser(null)
+  //     console.log("No user logged in.")
+  //     navigate("/sign-up") 
+  //   }
+  //   setLoading(false)}
+  // );  // when this has been doen i.e user has been logged in OR redirected to sign up page, we can stop the loading screen
+
+
+  // if (loading) {        // ensures previously logged in user's home page is not flashed - while we make sure what auth state is
+  //   return (
+  //     <div className="flex items-center justify-center min-h-screen">
+  //       <p className="font-jomhuria text-4xl font-jomhuria text-gray-500">Loading...</p>
+  //     </div>
+  //   );
+  // }
+
+  // if(!user){
+  //   return null
+  // }
+
+
+
+  //   return () => unsubscribe(); // Cleanup the listener on unmount
+  // }, [navigate]); // Add navigate as a dependency
+
+  // if (!user){
+  //   return null
+  // }
+
+  // if (loading) {
+  //   return <p>Loading...</p>;
+  // }
+
+  // // Check if the user is logged in
+  // useEffect(() => {
+  //   const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+  //     if (currentUser) {
+  //       setUser(currentUser)
+  //     } else {
+  //       // Redirect to the sign-up page if not logged in
+  //       navigate("/sign-up")
+  //     }
+  //   })
+
+  //   return () => unsubscribe() // Cleanup the listener on unmount
+  // }, [navigate])
 
   const [viewMode, setViewMode] = useState("list")
 
@@ -113,6 +188,62 @@ export default function HomePage() {
       setProjectToDelete(null)
     }
   }
+
+  const uploadHelper = async () => {
+    if (!profilePicture) {
+      toast.error("Please select a profile picture before saving.", {
+        position: "top-center",
+        autoClose: 3000,
+        className: "font-passion-one text-xl",
+        style: { backgroundColor: "#f44336", color: "white" },
+      });
+      return;
+    }
+  
+    try {
+      toast.info("Uploading profile picture...", {
+        position: "top-center",
+        autoClose: false,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: false,
+        className: "font-passion-one text-xl",
+      });
+  
+      // Upload the profile picture and get the new photoURL
+      const photoURL = await uploadProfilePicture(user.uid, profilePicture, storage);
+  
+      // Update the user's profile with the new photoURL
+      await updateProfile(user, {
+        photoURL: photoURL,
+      });
+
+      // await updateProfile({ photoURL });
+  
+      // // Update the user state with the new photoURL
+      // setUser({ ...user, photoURL });
+  
+      toast.dismiss();
+      toast.success("Profile picture updated successfully!", {
+        position: "top-center",
+        autoClose: 3000,
+        className: "font-passion-one text-xl",
+      });
+  
+      // Refresh the page to display the updated profile picture
+      window.location.reload();
+    } catch (error) {
+      console.error("Error uploading profile picture:", error);
+      toast.dismiss();
+      toast.error("Failed to upload profile picture. Please try again.", {
+        position: "top-center",
+        autoClose: 3000,
+        className: "font-passion-one text-xl",
+        style: { backgroundColor: "#f44336", color: "white" },
+      });
+    }
+  };
 
   // Function to initiate project completion
   const initiateCompletion = (id) => {
@@ -209,6 +340,37 @@ export default function HomePage() {
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
   }
 
+  const handleLogout = async () => {
+    try {
+      await signOut(auth)       // logs the user out, triggerd onAuthStateChagned to set user object to null
+      navigate("/sign-up")
+      console.log("Logged out successfully")
+      toast.success("Logged out successfully", {
+        position: "top-center",
+        autoClose: 1000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "font-passion-one text-xl"
+      })
+    } catch (error){
+      console.log("Error logging out: ", error.message)
+      toast.error("Error logging out. Please try again momentarily.", {
+        position: "top-center",
+        autoClose: 4000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "font-passion-one text-xl",
+        style: { backgroundColor: "#f44336", color: "white" }
+      })
+    }
+  }
+
   // Filter projects based on selected category
   const filteredProjects =
     selectedCategory === "All" ? projects : projects.filter((project) => project.category === selectedCategory)
@@ -303,364 +465,409 @@ export default function HomePage() {
     { id: "Archived", name: "Archived", color: "bg-gray-400" },
   ]
 
-  return (
-    <div className="min-h-screen bg-white">
-      {/* Header/Navigation */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 py-5 flex justify-between items-center">
-          <div className="flex items-center">
-            <button className="p-2 rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none">
-              <Menu size={28} />
-            </button>
-            <div className="ml-4 w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-              <span className="text-xl text-gray-600">?</span>
-            </div>
-          </div>
-
-          {/* Center view toggle buttons */}
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => setViewMode("list")}
-              className={`border-2 p-2 rounded ${viewMode === "list" ? "border-black bg-gray-100" : "border-gray-300"}`}
-            >
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M4 6H20M4 12H20M4 18H11"
-                  stroke="black"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-
-            <button
-              onClick={() => setViewMode("calendar")}
-              className={`border-2 p-2 rounded ${viewMode === "calendar" ? "border-black bg-gray-100" : "border-gray-300"}`}
-            >
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect
-                  x="3"
-                  y="4"
-                  width="18"
-                  height="18"
-                  rx="2"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path d="M16 2V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M8 2V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M3 10H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-          </div>
-
-          <div className="flex items-center">
-            <div className="w-14 h-14 bg-gray-200 rounded-md flex items-center justify-center">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle
-                  cx="12"
-                  cy="8"
-                  r="5"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M20 21C20 16.5817 16.4183 13 12 13C7.58172 13 4 16.5817 4 21"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </div>
-            <span className="ml-2 text-base">User</span>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-8 py-4">
-        {/* Category Boxes - Clickable and Much Bigger */}
-        <div className="flex justify-center mb-8">
-          <div className="flex space-x-8">
-            {categories.slice(1).map((category) => (
-              <div
-                key={category.id}
-                className="flex flex-col items-center cursor-pointer transition-all duration-200"
-                onClick={() => setSelectedCategory(category.id)}
-                style={{
-                  transform: selectedCategory === category.id ? "scale(1.15)" : "scale(1)",
-                }}
-              >
-                <span
-                  className={`mb-3 font-medium ${selectedCategory === category.id ? "text-2xl font-bold" : "text-xl"}`}
-                >
-                  {category.name}
-                </span>
-                <div
-                  className={`${category.color} rounded-md transition-all duration-200`}
-                  style={{
-                    width: selectedCategory === category.id ? "42px" : "36px",
-                    height: selectedCategory === category.id ? "28px" : "24px",
-                  }}
-                ></div>
+  if (loading || !user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="font-jomhuria text-4xl text-gray-500">
+          {loading ? "Loading..." : "Redirecting..."}
+        </p>
+      </div>
+    );
+  } else {
+    return (
+      <div className="min-h-screen bg-white">
+        {/* Header/Navigation */}
+        <header className="bg-white shadow-sm">
+          <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 py-5 flex justify-between items-center">
+            <div className="flex items-center">
+              <button className="p-2 rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none">
+                <Menu size={28} />
+              </button>
+              <div className="ml-4 w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                <span className="text-xl text-gray-600 font-lobster">?</span>
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* New Project button - Text centered above button */}
-        <div className="flex justify-center mb-10">
-          <div className="flex flex-col items-center">
-            <span className="mb-3 text-xl font-medium">New Project</span>
-            <div
-              className="w-32 h-20 border-2 border-dashed border-gray-300 rounded-md flex items-center justify-center cursor-pointer hover:bg-gray-50"
-              onClick={() => setShowNewProjectModal(true)}
-            >
-              <PlusCircle size={32} className="text-gray-400" />
-            </div>
-          </div>
-        </div>
-
-        {viewMode === "list" ? (
-          <>
-            {/* Project Table Header */}
-            <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-gray-50 border-b border-gray-200 mb-2">
-              <div className="col-span-1"></div>
-              <div className="col-span-3 font-medium text-gray-700 text-base">Project (Window) Name</div>
-              <div className="col-span-3 font-medium text-gray-700 text-base">Progress Bar</div>
-              <div className="col-span-2 font-medium text-gray-700 text-base">Time Left</div>
-              <div className="col-span-2 font-medium text-gray-700 text-base">Difficulty</div>
-              <div className="col-span-1"></div>
             </div>
 
-            {/* Project Rows */}
-            {filteredProjects.length > 0 ? (
-              filteredProjects.map((project) => (
-                <div
-                  key={project.id}
-                  className="grid grid-cols-12 gap-4 px-6 py-4 border-b border-gray-200 hover:bg-gray-50 mb-1"
-                >
-                  <div className="col-span-1 flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={project.completed}
-                      onChange={() => initiateCompletion(project.id)}
-                      className="h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer"
+            {/* Center view toggle buttons */}
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setViewMode("list")}
+                className={`border-2 p-2 rounded ${viewMode === "list" ? "border-black bg-gray-100" : "border-gray-300"}`}
+              >
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M4 6H20M4 12H20M4 18H11"
+                    stroke="black"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+
+              <button
+                onClick={() => setViewMode("calendar")}
+                className={`border-2 p-2 rounded ${viewMode === "calendar" ? "border-black bg-gray-100" : "border-gray-300"}`}
+              >
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect
+                    x="3"
+                    y="4"
+                    width="18"
+                    height="18"
+                    rx="2"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path d="M16 2V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M8 2V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M3 10H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="flex flex-col items-center">
+              
+              {user ? (
+                  <span className="font-chela-one-regular text-lg mt-8">{formatDisplayName(user.displayName)}</span>
+                ) : (
+                  <span className="font-chela-one-regular text-lg mt-8">Loading...</span>
+              )}
+
+              {user && user.photoURL ? (
+                <img
+                  src={user.photoURL || "/placeholder.svg"}
+                  alt={`${user.displayName}'s profile`}
+                  className="w-16 h-16 rounded-full mt-1"
+                />
+              ) : (
+                <div className="w-16 h-16 mt-1 rounded-full flex items-center justify-center bg-gray-200">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" onClick={() => document.getElementById("profilePictureInput").click()} className="cursor-pointer">
+                    <circle
+                      cx="12"
+                      cy="8"
+                      r="5"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
                     />
-                  </div>
-                  <div className="col-span-3 flex items-center">
-                    <span
-                      className={`text-base font-medium ${project.completed ? "text-gray-400 line-through" : "text-gray-900"}`}
+                    <path
+                      d="M20 21C20 16.5817 16.4183 13 12 13C7.58172 13 4 16.5817 4 21"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  <input
+                    id="profilePictureInput"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleProfilePictureUpload(e, setProfilePicture)} // using the utility function
+                  />
+                  {profilePicture && (   // save button for profile pic upload
+                    <button
+                      onClick={uploadHelper()}
+                      className="absolute bottom-0 right-0 bg-blue-500 text-white px-2 py-1 rounded-md text-sm hover:bg-blue-600 hidden"
                     >
-                      {project.name}
-                    </span>
-                  </div>
-                  <div className="col-span-3 flex items-center">
-                    {/* Custom progress slider without visible thumb */}
-                    <div className="w-full flex items-center">
-                      <div className="w-full relative">
-                        <div
-                          className="absolute top-0 left-0 h-4 bg-green-500 rounded-l-md"
-                          style={{ width: `${project.progress}%` }}
-                        ></div>
-                        <div className="w-full h-4 bg-gray-200 rounded-md"></div>
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          value={project.progress}
-                          onChange={(e) => updateProgress(project.id, Number.parseInt(e.target.value))}
-                          className="absolute top-0 left-0 w-full h-4 opacity-0 cursor-pointer"
-                        />
+                      Save
+                    </button>
+                  )}
+                </div>
+              )}
+
+              <button 
+                onClick={handleLogout} 
+                className="mt-4 px-2 py-1 bg-red-500 text-white text-lg font-passion-one rounded-md hover:bg-red-600">
+                Logout
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* Main Content */}
+        <main className="max-w-7xl mx-auto px-8 py-4">
+          {/* Category Boxes - Clickable and Much Bigger */}
+          <div className="flex justify-center mb-8">
+            <div className="flex space-x-8">
+              {categories.slice(1).map((category) => (
+                <div
+                  key={category.id}
+                  className="flex flex-col items-center cursor-pointer transition-all duration-200"
+                  onClick={() => setSelectedCategory(category.id)}
+                  style={{
+                    transform: selectedCategory === category.id ? "scale(1.15)" : "scale(1)",
+                  }}
+                >
+                  <span
+                    className={`mb-3 font-lobster font-medium ${selectedCategory === category.id ? "text-2xl font-bold" : "text-xl"}`}
+                  >
+                    {category.name}
+                  </span>
+                  <div
+                    className={`${category.color} rounded-md transition-all duration-200`}
+                    style={{
+                      width: selectedCategory === category.id ? "42px" : "36px",
+                      height: selectedCategory === category.id ? "28px" : "24px",
+                    }}
+                  ></div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* New Project button - Text centered above button */}
+          <div className="flex justify-center mb-10">
+            <div className="flex flex-col items-center">
+              <span className="mb-3 text-xl font-abril-fatface font-medium">New Project</span>
+              <div
+                className="w-32 h-20 border-2 border-dashed border-gray-300 rounded-md flex items-center justify-center cursor-pointer hover:bg-gray-50"
+                onClick={() => setShowNewProjectModal(true)}
+              >
+                <PlusCircle size={32} className="text-gray-400" />
+              </div>
+            </div>
+          </div>
+
+          {viewMode === "list" ? (
+            <>
+              {/* Project Table Header */}
+              <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-gray-50 border-b border-gray-200 mb-2">
+                <div className="col-span-1"></div>
+                <div className="col-span-3 font-medium text-gray-700 text-base">Project (Window) Name</div>
+                <div className="col-span-3 font-medium text-gray-700 text-base">Progress Bar</div>
+                <div className="col-span-2 font-medium text-gray-700 text-base">Time Left</div>
+                <div className="col-span-2 font-medium text-gray-700 text-base">Difficulty</div>
+                <div className="col-span-1"></div>
+              </div>
+
+              {/* Project Rows */}
+              {filteredProjects.length > 0 ? (
+                filteredProjects.map((project) => (
+                  <div
+                    key={project.id}
+                    className="grid grid-cols-12 gap-4 px-6 py-4 border-b border-gray-200 hover:bg-gray-50 mb-1"
+                  >
+                    <div className="col-span-1 flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={project.completed}
+                        onChange={() => initiateCompletion(project.id)}
+                        className="h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer"
+                      />
+                    </div>
+                    <div className="col-span-3 flex items-center">
+                      <span
+                        className={`text-base font-medium ${project.completed ? "text-gray-400 line-through" : "text-gray-900"}`}
+                      >
+                        {project.name}
+                      </span>
+                    </div>
+                    <div className="col-span-3 flex items-center">
+                      {/* Custom progress slider without visible thumb */}
+                      <div className="w-full flex items-center">
+                        <div className="w-full relative">
+                          <div
+                            className="absolute top-0 left-0 h-4 bg-green-500 rounded-l-md"
+                            style={{ width: `${project.progress}%` }}
+                          ></div>
+                          <div className="w-full h-4 bg-gray-200 rounded-md"></div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            value={project.progress}
+                            onChange={(e) => updateProgress(project.id, Number.parseInt(e.target.value))}
+                            className="absolute top-0 left-0 w-full h-4 opacity-0 cursor-pointer"
+                          />
+                        </div>
+                        <span className="ml-2 text-sm text-gray-500">{project.progress}%</span>
                       </div>
-                      <span className="ml-2 text-sm text-gray-500">{project.progress}%</span>
+                    </div>
+                    <div className="col-span-2 flex items-center">
+                      <span className="text-base text-gray-700">{project.timeLeft}</span>
+                      {project.alert && <AlertTriangle size={18} className="ml-2 text-red-500" />}
+                    </div>
+                    <div className="col-span-2 flex items-center">{getDifficultyIcon(project.difficulty)}</div>
+                    <div className="col-span-1 flex items-center justify-end">
+                      <button
+                        onClick={() => initiateDelete(project.id)}
+                        className="text-gray-400 hover:text-red-500 focus:outline-none"
+                      >
+                        <Trash2 size={20} />
+                      </button>
                     </div>
                   </div>
-                  <div className="col-span-2 flex items-center">
-                    <span className="text-base text-gray-700">{project.timeLeft}</span>
-                    {project.alert && <AlertTriangle size={18} className="ml-2 text-red-500" />}
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-500">No projects in this category yet.</div>
+              )}
+            </>
+          ) : (
+            // Calendar view placeholder
+            <div className="bg-gray-100 rounded-lg p-8 text-center">
+              <h2 className="text-2xl font-bold mb-4">Calendar View</h2>
+              <p className="text-gray-600">Calendar view is coming soon!</p>
+            </div>
+          )}
+        </main>
+
+        {/* New Project Modal - Simplified */}
+        {showNewProjectModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+              {/* Modal Header - Centered Project title */}
+              <div className="px-6 py-4 text-center">
+                <h2 className="text-xl font-bold text-gray-800">Project</h2>
+                <button
+                  onClick={() => setShowNewProjectModal(false)}
+                  className="absolute top-4 right-4 text-gray-400 hover:text-gray-500"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="px-6 py-4 space-y-6">
+                {/* Project Name Input */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Project Name</label>
+                  <input
+                    type="text"
+                    placeholder="Enter project name"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    value={newProject.name}
+                    onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
+                  />
+                </div>
+
+                {/* Due Date - with min date validation */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                  <div className="flex items-center bg-gray-100 rounded-md px-3 py-2">
+                    <Calendar size={18} className="mr-2 text-gray-500" />
+                    <input
+                      type="date"
+                      className="bg-transparent focus:outline-none w-full"
+                      value={newProject.dueDate}
+                      min={today} // Prevent selecting dates before today
+                      onChange={(e) => setNewProject({ ...newProject, dueDate: e.target.value })}
+                    />
                   </div>
-                  <div className="col-span-2 flex items-center">{getDifficultyIcon(project.difficulty)}</div>
-                  <div className="col-span-1 flex items-center justify-end">
-                    <button
-                      onClick={() => initiateDelete(project.id)}
-                      className="text-gray-400 hover:text-red-500 focus:outline-none"
+                </div>
+
+                {/* Difficulty */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Difficulty</label>
+                  <div className="flex items-center bg-gray-100 rounded-md px-3 py-2">
+                    <Clock size={18} className="mr-2 text-gray-500" />
+                    <select
+                      className="bg-transparent focus:outline-none w-full"
+                      value={newProject.difficulty}
+                      onChange={(e) => setNewProject({ ...newProject, difficulty: e.target.value })}
                     >
-                      <Trash2 size={20} />
+                      <option value="Easy">Easy</option>
+                      <option value="Medium">Medium</option>
+                      <option value="Hard">Hard</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Save Current Tabs Option - Now Purple */}
+                <div className="bg-purple-50 rounded-md p-4 border border-purple-100">
+                  <h3 className="text-lg font-medium text-purple-800 mb-2">Save Current Tabs</h3>
+                  <p className="text-sm text-purple-600 mb-3">
+                    Would you like to save all currently open browser tabs with this project?
+                  </p>
+                  <div className="flex space-x-4">
+                    <button
+                      className={`px-4 py-2 rounded-md ${newProject.saveTabs ? "bg-purple-600 text-white" : "bg-gray-200 text-gray-700"}`}
+                      onClick={() => setNewProject({ ...newProject, saveTabs: true })}
+                    >
+                      Yes
+                    </button>
+                    <button
+                      className={`px-4 py-2 rounded-md ${!newProject.saveTabs ? "bg-purple-600 text-white" : "bg-gray-200 text-gray-700"}`}
+                      onClick={() => setNewProject({ ...newProject, saveTabs: false })}
+                    >
+                      No
                     </button>
                   </div>
                 </div>
-              ))
-            ) : (
-              <div className="text-center py-8 text-gray-500">No projects in this category yet.</div>
-            )}
-          </>
-        ) : (
-          // Calendar view placeholder
-          <div className="bg-gray-100 rounded-lg p-8 text-center">
-            <h2 className="text-2xl font-bold mb-4">Calendar View</h2>
-            <p className="text-gray-600">Calendar view is coming soon!</p>
+              </div>
+
+              {/* Modal Footer - Just Create Project button */}
+              <div className="px-6 py-4 flex justify-end">
+                <button
+                  onClick={addNewProject}
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md font-medium"
+                >
+                  Create Project
+                </button>
+              </div>
+            </div>
           </div>
         )}
-      </main>
 
-      {/* New Project Modal - Simplified */}
-      {showNewProjectModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-            {/* Modal Header - Centered Project title */}
-            <div className="px-6 py-4 text-center">
-              <h2 className="text-xl font-bold text-gray-800">Project</h2>
-              <button
-                onClick={() => setShowNewProjectModal(false)}
-                className="absolute top-4 right-4 text-gray-400 hover:text-gray-500"
-              >
-                <X size={20} />
-              </button>
-            </div>
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Confirm Deletion</h3>
+              <p className="text-gray-600 mb-6">
+                Are you sure you want to delete this project? This action cannot be undone.
+              </p>
 
-            {/* Modal Body */}
-            <div className="px-6 py-4 space-y-6">
-              {/* Project Name Input */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Project Name</label>
-                <input
-                  type="text"
-                  placeholder="Enter project name"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  value={newProject.name}
-                  onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
-                />
+              <div className="flex justify-end space-x-4">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+                >
+                  Cancel
+                </button>
+                <button onClick={confirmDelete} className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+                  Delete
+                </button>
               </div>
-
-              {/* Due Date - with min date validation */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
-                <div className="flex items-center bg-gray-100 rounded-md px-3 py-2">
-                  <Calendar size={18} className="mr-2 text-gray-500" />
-                  <input
-                    type="date"
-                    className="bg-transparent focus:outline-none w-full"
-                    value={newProject.dueDate}
-                    min={today} // Prevent selecting dates before today
-                    onChange={(e) => setNewProject({ ...newProject, dueDate: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              {/* Difficulty */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Difficulty</label>
-                <div className="flex items-center bg-gray-100 rounded-md px-3 py-2">
-                  <Clock size={18} className="mr-2 text-gray-500" />
-                  <select
-                    className="bg-transparent focus:outline-none w-full"
-                    value={newProject.difficulty}
-                    onChange={(e) => setNewProject({ ...newProject, difficulty: e.target.value })}
-                  >
-                    <option value="Easy">Easy</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Hard">Hard</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Save Current Tabs Option - Now Purple */}
-              <div className="bg-purple-50 rounded-md p-4 border border-purple-100">
-                <h3 className="text-lg font-medium text-purple-800 mb-2">Save Current Tabs</h3>
-                <p className="text-sm text-purple-600 mb-3">
-                  Would you like to save all currently open browser tabs with this project?
-                </p>
-                <div className="flex space-x-4">
-                  <button
-                    className={`px-4 py-2 rounded-md ${newProject.saveTabs ? "bg-purple-600 text-white" : "bg-gray-200 text-gray-700"}`}
-                    onClick={() => setNewProject({ ...newProject, saveTabs: true })}
-                  >
-                    Yes
-                  </button>
-                  <button
-                    className={`px-4 py-2 rounded-md ${!newProject.saveTabs ? "bg-purple-600 text-white" : "bg-gray-200 text-gray-700"}`}
-                    onClick={() => setNewProject({ ...newProject, saveTabs: false })}
-                  >
-                    No
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Footer - Just Create Project button */}
-            <div className="px-6 py-4 flex justify-end">
-              <button
-                onClick={addNewProject}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md font-medium"
-              >
-                Create Project
-              </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Confirm Deletion</h3>
-            <p className="text-gray-600 mb-6">
-              Are you sure you want to delete this project? This action cannot be undone.
-            </p>
+        {/* Completion Confirmation Modal */}
+        {showCompletionConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+              <div className="flex items-center mb-4">
+                <Check size={24} className="text-green-500 mr-2" />
+                <h3 className="text-lg font-bold text-gray-900">Project Completion</h3>
+              </div>
+              <p className="text-gray-600 mb-6">
+                Have you completed this project? It will be moved to the Archived section.
+              </p>
 
-            <div className="flex justify-end space-x-4">
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
-              >
-                Cancel
-              </button>
-              <button onClick={confirmDelete} className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
-                Delete
-              </button>
+              <div className="flex justify-end space-x-4">
+                <button
+                  onClick={() => setShowCompletionConfirm(false)}
+                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+                >
+                  No
+                </button>
+                <button
+                  onClick={confirmCompletion}
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                >
+                  Yes, Complete
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Completion Confirmation Modal */}
-      {showCompletionConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <div className="flex items-center mb-4">
-              <Check size={24} className="text-green-500 mr-2" />
-              <h3 className="text-lg font-bold text-gray-900">Project Completion</h3>
-            </div>
-            <p className="text-gray-600 mb-6">
-              Have you completed this project? It will be moved to the Archived section.
-            </p>
-
-            <div className="flex justify-end space-x-4">
-              <button
-                onClick={() => setShowCompletionConfirm(false)}
-                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
-              >
-                No
-              </button>
-              <button
-                onClick={confirmCompletion}
-                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-              >
-                Yes, Complete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  )
+        )}
+      </div>
+    )
+  }
 }
 

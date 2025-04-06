@@ -21,6 +21,7 @@ import Signup from "./components/Signup"
 import HomePage from './components/home-page'
 import TestDashboard from "./components/TestDashboard"
 import { BrowserRouter, Routes, Route } from "react-router-dom"
+import "./styles/globalfonts.css"
 
 
 function App() {
@@ -28,7 +29,7 @@ function App() {
     <BrowserRouter>  {/* sets up all our browser routes*/}
       <Routes>
         {/* main signup page route */}
-        <Route path = "/signup" element = {<Signup/>} />
+        <Route path = "/sign-up" element = {<Signup/>} />
         {/* test dashboard page route */}
         <Route path = "/home-page" element = {<HomePage/>} />
         {/* default page route - signup page */}

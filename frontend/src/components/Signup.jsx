@@ -17,13 +17,14 @@ import {
   signInWithEmailLink
 } from "firebase/auth"
 
-import {
-  ref,
-  uploadBytes,
-  getDownloadURL,
-  uploadBytesResumable
-} from "firebase/storage"
+// import {
+//   ref,
+//   uploadBytes,
+//   getDownloadURL,
+//   uploadBytesResumable
+// } from "firebase/storage"
 
+import { handleProfilePictureUpload, uploadProfilePicture } from "../utils/profilePictureUtils.js"
 import { auth } from "../firebase-config.js"
 import { storage } from "../firebase-config.js"
 // import { getStorage, ref, upload}
@@ -52,6 +53,33 @@ export default function Signup() {
     try {
       const result = await signInWithPopup(auth, provider)
       const user = result.user
+
+          //  check if existing sign-in methods exist for the email
+      const signInMethods = await fetchSignInMethodsForEmail(auth, user.email);
+      console.log(signInMethods)
+      if (signInMethods.length > 0 && !signInMethods.includes("google.com")) {
+        // if the email is associated with a different sign-in method
+        toast.error(
+          `An account with the email ${user.email} already exists. Please log in using ${signInMethods[0]}.`,
+          {
+            position: "top-center",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "font-passion-one text-xl",
+            style: { backgroundColor: "#f44336", color: "white" },
+          }
+        );
+
+        // Sign out the user to prevent them from being logged in
+        await auth.signOut();
+        console.log("User has existing account")
+        return;
+      }
+      
       console.log("User loggin in:", user.displayName)
       toast.success("Successfully logged in.", {
         position: "top-center",
@@ -293,7 +321,7 @@ export default function Signup() {
             progress: undefined,
             className: "font-passion-one text-xl",
           })
-          photoURL = await uploadProfilePicture(user.uid, profilePicture)
+          photoURL = await uploadProfilePicture(user.uid, profilePicture, storage)
           toast.dismiss()
         } catch ( uploadError ){
           console.error("Profile picture upload failed:", uploadError);
@@ -422,78 +450,78 @@ export default function Signup() {
     }
   }
 
-const handleProfilePictureUpload = (e) => {
-  const file = e.target.files[0]
-  if(!file){
-    return
-  }
+// const handleProfilePictureUpload = (e) => {
+//   const file = e.target.files[0]
+//   if(!file){
+//     return
+//   }
 
-  if (!file.type.match('image.*')){
-    setError("Pleast select an image file")
-    toast.error("Please select an image file", {
-      position: "top-center",
-      autoClose: 3000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
-      progress: undefined,
-      className: "font-passion-one text-xl",
-      style: { backgroundColor: "#f44336", color: "white" }
-    })
-    return
-  }
+//   if (!file.type.match('image.*')){
+//     setError("Pleast select an image file")
+//     toast.error("Please select an image file", {
+//       position: "top-center",
+//       autoClose: 3000,
+//       hideProgressBar: false,
+//       closeOnClick: true,
+//       pauseOnHover: true,
+//       draggable: true,
+//       progress: undefined,
+//       className: "font-passion-one text-xl",
+//       style: { backgroundColor: "#f44336", color: "white" }
+//     })
+//     return
+//   }
 
-  if (!file.size > (10 * 1024 * 1024)){   // bigger than 10 MB
-    setError("Profile picture must be less than 10MB")
-    toast.error("Profile picture must be less than 10MB", {
-      position: "top-center",
-      autoClose: 3000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
-      progress: undefined,
-      className: "font-passion-one text-xl",
-      style: { backgroundColor: "#f44336", color: "white" }
-    })
-    return
-  }
+//   if (!file.size > (10 * 1024 * 1024)){   // bigger than 10 MB
+//     setError("Profile picture must be less than 10MB")
+//     toast.error("Profile picture must be less than 10MB", {
+//       position: "top-center",
+//       autoClose: 3000,
+//       hideProgressBar: false,
+//       closeOnClick: true,
+//       pauseOnHover: true,
+//       draggable: true,
+//       progress: undefined,
+//       className: "font-passion-one text-xl",
+//       style: { backgroundColor: "#f44336", color: "white" }
+//     })
+//     return
+//   }
 
-  setProfilePicture(file)
-  e.target.value = null       // clears input value to allow re-uploads of same file
-}
+//   setProfilePicture(file)
+//   e.target.value = null       // clears input value to allow re-uploads of same file
+// }
 
-const uploadProfilePicture = async (userId, file) => {
-  if (!file){
-    return null
-  }
+// const uploadProfilePicture = async (userId, file) => {
+//   if (!file){
+//     return null
+//   }
 
-  // creates storage reference
-  const storageRef = ref(storage, `profileImages/${userId}/${Date.now()}-${file.name}`)
-  // simply references a particular custom directory and file path name in the storage
-  const uploadTask = uploadBytesResumable(storageRef, file)
-  // uploads the file in question, i.e image hre, to that file path
+//   // creates storage reference
+//   const storageRef = ref(storage, `profileImages/${userId}/${Date.now()}-${file.name}`)
+//   // simply references a particular custom directory and file path name in the storage
+//   const uploadTask = uploadBytesResumable(storageRef, file)
+//   // uploads the file in question, i.e image hre, to that file path
 
-  return new Promise((resolve, reject) =>{
-    uploadTask.on(
-      "state_change",
-      (snapshot) => {
-        const progress = (snapshot.bytesTransferred/snapshot.totalBytes)
-        console.log(`Upload progress: ${progress.toFixed(2)}`)
-      },
-      (error) => {
-        console.error("Upload failed:", erorr)
-        reject(error)
-      },
-      async() => {
-        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref)
-        console.log("File available at:", downloadURL)
-        resolve(downloadURL)
-      }
-    )
-  })
-}
+//   return new Promise((resolve, reject) =>{
+//     uploadTask.on(
+//       "state_change",
+//       (snapshot) => {
+//         const progress = (snapshot.bytesTransferred/snapshot.totalBytes)
+//         console.log(`Upload progress: ${progress.toFixed(2)}`)
+//       },
+//       (error) => {
+//         console.error("Upload failed:", erorr)
+//         reject(error)
+//       },
+//       async() => {
+//         const downloadURL = await getDownloadURL(uploadTask.snapshot.ref)
+//         console.log("File available at:", downloadURL)
+//         resolve(downloadURL)
+//       }
+//     )
+//   })
+// }
 
 // (e) => {e.preventDefault()} IMPORTANT for many cases
 
@@ -668,7 +696,7 @@ const resetForgotPasswordMode = () => {
   return (
     <>
       {/* Import Google Fonts */}
-      <style jsx global>{`
+      {/* <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Jomhuria&family=Chela+One&family=Lobster&family=Nova+Square&family=Abril+Fatface&family=Boldonse&family=Passion+One:wght@400;700;900&family=Spline+Sans:wght@300..700&display=swap');
         
         .font-jomhuria {
@@ -712,7 +740,7 @@ const resetForgotPasswordMode = () => {
         .text-shadow {
           text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
         }
-      `}</style>
+      `}</style> */}
 
       <ToastContainer 
         position="top-right"
@@ -1055,7 +1083,7 @@ const resetForgotPasswordMode = () => {
                     id="profilePictureInput"
                     type="file"
                     accept="image/*"
-                    onChange={(e) => handleProfilePictureUpload(e)}
+                    onChange={(e) => handleProfilePictureUpload(e, setProfilePicture)}
                     className="hidden"
                   />
                 </div>

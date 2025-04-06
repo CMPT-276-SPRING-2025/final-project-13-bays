@@ -1,0 +1,44 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Jomhuria&family=Chela+One&family=Lobster&family=Nova+Square&family=Abril+Fatface&family=Boldonse&family=Passion+One:wght@400;700;900&family=Spline+Sans:wght@300..700&display=swap');
+
+.font-jomhuria {
+    font-family: 'Jomhuria', cursive;
+}
+
+.font-lobster {
+    font-family: 'Lobster', cursive;
+}
+
+.font-abril-fatface {
+    font-family: 'Abril Fatface', cursive;
+}
+
+.font-boldonse {
+    font-family: 'Boldonse', cursive;
+}
+
+.font-nova-square-regular {
+    font-family: "Nova Square", sans-serif;
+}
+
+.font-spline-sans-tab {
+    font-family: "Spline Sans", sans-serif;
+}
+
+.font-chela-one-regular {
+    font-family: "Chela One", system-ui;
+}
+
+.font-passion-one {
+    font-family: 'Passion One', sans-serif;
+    font-weight: 100;
+    font-style: normal;
+}
+
+.font-kanit {
+    font-family: 'Kanit', sans-serif;
+}
+
+.text-shadow {
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
