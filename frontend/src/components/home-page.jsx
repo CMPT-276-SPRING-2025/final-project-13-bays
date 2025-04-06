@@ -1,8 +1,7 @@
 "use client"
 
-import { auth, db } from "../firebase-config";
-import { collection, getDocs } from "firebase/firestore";
-import { useState, useEffect } from "react"
+import { auth } from "../firebase-config";
+import { useState } from "react"
 import { Trash2, Menu, PlusCircle, AlertTriangle, X, Calendar, Clock, Check } from "lucide-react"
 import uploadProjectToFirestore from "./UploadProject"
 import FetchProjectsFromFirestore from "./FetchProjects";
@@ -12,6 +11,8 @@ import modifyProjectInFirestore from "./ModifyProject";
 export default function HomePage() {
   // Get user ID
   const userId = auth.currentUser?.uid
+  const userName = auth.currentUser?.displayName
+
   
   const [projects, setProjects] = useState([]); // Ensure this state is defined
 
@@ -156,26 +157,25 @@ export default function HomePage() {
     }
   
     const newId = Math.max(...projects.map((p) => p.id), 0) + 1;
-    const timeLeft = calculateTimeLeft(newProject.dueDate);
-    const isUrgent = isDueToday(newProject.dueDate);
   
     const projectData = {
       id: newId,
       name: newProject.name,
       progress: 0,
-      timeLeft: timeLeft,
+      dueDate: newProject.dueDate,
       difficulty: newProject.difficulty,
       category: selectedCategory, // Use the currently selected category
-      alert: isUrgent,
+      alert: isDueToday(newProject.dueDate),
       completed: false,
     };
 
     // Add the project to the local state
-    setProjects([...projects, projectData]);
+    setProjects([...projects, { ...projectData, timeLeft: calculateTimeLeft(newProject.dueDate) }]);
 
     // Call the Firebase upload function
     uploadProjectToFirestore({
       userId,
+      userName,
       projectData,
       onSuccess: () => {
         console.log("Project uploaded successfully!");

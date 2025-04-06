@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase-config";
+import { calculateTimeLeft } from "./CalculateTimeLeft"; // Import the utility function
 
 export default function FetchProjectsFromFirestore({ userId, onProjectsFetched }) {
   useEffect(() => {
@@ -18,10 +19,11 @@ export default function FetchProjectsFromFirestore({ userId, onProjectsFetched }
         const querySnapshot = await getDocs(userProjectsRef);
 
         // Map the documents to an array of project data
-        const fetchedProjects = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        const fetchedProjects = querySnapshot.docs.map((docSnapshot) => {
+          const project = { id: docSnapshot.id, ...docSnapshot.data() };
+          const timeLeft = calculateTimeLeft(project.dueDate); // Calculate timeLeft dynamically
+          return { ...project, timeLeft }; // Add timeLeft to the project object for UI
+        });
 
         // Pass the fetched projects to the parent component
         onProjectsFetched(fetchedProjects);
