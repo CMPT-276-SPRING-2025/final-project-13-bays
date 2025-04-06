@@ -108,6 +108,7 @@ export default function HomePage() {
   const [newCategory, setNewCategory] = useState({
     name: "",
     icon: "briefcase",
+    description: "", // Add description field
   })
 
   // Get today's date in YYYY-MM-DD format for min date validation
@@ -131,11 +132,19 @@ export default function HomePage() {
   const [showCompletionConfirm, setShowCompletionConfirm] = useState(false)
   const [projectToComplete, setProjectToComplete] = useState(null)
 
+  // State for unarchive confirmation
+  const [showUnarchiveConfirm, setShowUnarchiveConfirm] = useState(false)
+  const [projectToUnarchive, setProjectToUnarchive] = useState(null)
+
   // Add these new state variables after the other state declarations
   const [showEditProjectModal, setShowEditProjectModal] = useState(false)
   const [projectToEdit, setProjectToEdit] = useState(null)
   const [showEditCategoryModal, setShowEditCategoryModal] = useState(false)
   const [categoryToEdit, setcategoryToEdit] = useState(null)
+
+  // Calendar state
+  const [currentMonth, setCurrentMonth] = useState(new Date())
+  const [selectedDate, setSelectedDate] = useState(new Date())
 
   // Close sidebar when clicking outside
   useEffect(() => {
@@ -216,6 +225,7 @@ export default function HomePage() {
       id: newId,
       name: newCategory.name,
       icon: newCategory.icon,
+      description: newCategory.description || "", // Add description
     }
 
     setProjectCategories([...projectCategories, newUserCategory])
@@ -230,6 +240,7 @@ export default function HomePage() {
     setNewCategory({
       name: "",
       icon: "briefcase",
+      description: "", // Reset description
     })
     setShowNewCategoryModal(false)
 
@@ -279,8 +290,18 @@ export default function HomePage() {
           [selectedUserCategory]: prev[selectedUserCategory].filter((project) => project.id !== projectToDelete),
         }))
       } else {
-        // Delete from system category projects
+        // Delete from all projects regardless of completion status
         setProjects(projects.filter((project) => project.id !== projectToDelete))
+
+        // Also check and delete from user categories if it's a completed project being viewed in "Completed" section
+        if (selectedSystemCategory === "Archived") {
+          Object.keys(userCategoryProjects).forEach((categoryId) => {
+            setUserCategoryProjects((prev) => ({
+              ...prev,
+              [categoryId]: prev[categoryId].filter((project) => project.id !== projectToDelete),
+            }))
+          })
+        }
       }
       setShowDeleteConfirm(false)
       setProjectToDelete(null)
@@ -388,6 +409,61 @@ export default function HomePage() {
 
       setShowCompletionConfirm(false)
       setProjectToComplete(null)
+    }
+  }
+
+  // Function to handle checkbox click for completed projects
+  const handleCheckboxClick = (project) => {
+    if (project.completed) {
+      // If project is already completed, ask to unarchive
+      setProjectToUnarchive(project.id)
+      setShowUnarchiveConfirm(true)
+    } else {
+      // If project is not completed, initiate completion
+      initiateCompletion(project.id)
+    }
+  }
+
+  // Function to unarchive a project
+  const confirmUnarchive = () => {
+    if (projectToUnarchive !== null) {
+      // Find the project to unarchive
+      let projectFound = false
+
+      // First check if it's in general projects
+      const updatedProjects = projects.map((project) => {
+        if (project.id === projectToUnarchive) {
+          projectFound = true
+          const systemCategory = determineSystemCategory(project.dueDate)
+          return { ...project, completed: false, systemCategory }
+        }
+        return project
+      })
+
+      if (projectFound) {
+        setProjects(updatedProjects)
+      } else {
+        // Check in user categories
+        for (const categoryId in userCategoryProjects) {
+          const categoryProjects = userCategoryProjects[categoryId]
+          if (categoryProjects.some((p) => p.id === projectToUnarchive)) {
+            setUserCategoryProjects((prev) => ({
+              ...prev,
+              [categoryId]: prev[categoryId].map((project) => {
+                if (project.id === projectToUnarchive) {
+                  const systemCategory = determineSystemCategory(project.dueDate)
+                  return { ...project, completed: false, systemCategory }
+                }
+                return project
+              }),
+            }))
+            break
+          }
+        }
+      }
+
+      setShowUnarchiveConfirm(false)
+      setProjectToUnarchive(null)
     }
   }
 
@@ -532,8 +608,6 @@ export default function HomePage() {
 
   // Get projects to display based on selected categories
   const getDisplayProjects = () => {
-    const filteredProjects = []
-
     if (selectedUserCategory) {
       // Get projects from the selected user category
       const categoryProjects = userCategoryProjects[selectedUserCategory] || []
@@ -558,10 +632,20 @@ export default function HomePage() {
       return [...generalProjects, ...userProjects]
     }
 
-    // If no categories selected, return all projects
-    const allProjects = [...projects, ...Object.values(userCategoryProjects).flat()]
+    // If no categories selected, return all projects EXCEPT completed ones
+    const allProjects = [
+      ...projects.filter((project) => !project.completed),
+      ...Object.values(userCategoryProjects)
+        .flat()
+        .filter((project) => !project.completed),
+    ]
 
     return allProjects
+  }
+
+  // Get all projects for calendar view (no filtering)
+  const getAllProjects = () => {
+    return [...projects, ...Object.values(userCategoryProjects).flat()]
   }
 
   const displayProjects = getDisplayProjects()
@@ -930,7 +1014,10 @@ export default function HomePage() {
 
   // Add this function to handle editing a category
   const initiateEditCategory = (category) => {
-    setcategoryToEdit({ ...category })
+    setcategoryToEdit({
+      ...category,
+      description: category.description || "", // Ensure description exists
+    })
     setShowEditCategoryModal(true)
   }
 
@@ -994,6 +1081,179 @@ export default function HomePage() {
     }
   }
 
+    // Calendar helper functions
+    const daysInMonth = (month, year) => {
+      return new Date(year, month + 1, 0).getDate()
+    }
+  
+    const firstDayOfMonth = (month, year) => {
+      return new Date(year, month, 1).getDay()
+    }
+  
+    const prevMonth = () => {
+      setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))
+    }
+  
+    const nextMonth = () => {
+      setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))
+    }
+  
+    // Get projects for a specific date
+    const getProjectsForDate = (date) => {
+      const allProjects = getAllProjects()
+      return allProjects.filter((project) => {
+        if (!project.dueDate) return false
+        const dueDate = new Date(project.dueDate)
+        return (
+          dueDate.getDate() === date.getDate() &&
+          dueDate.getMonth() === date.getMonth() &&
+          date.getFullYear() === date.getFullYear()
+        )
+      })
+    }
+  
+    // Format date as YYYY-MM-DD
+    const formatDate = (date) => {
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, "0")
+      const day = String(date.getDate()).padStart(2, "0")
+      return `${year}-${month}-${day}`
+    }
+  
+    // Check if a date is today
+    const isToday = (date) => {
+      const today = new Date()
+      return (
+        date.getDate() === today.getDate() &&
+        date.getMonth() === today.getMonth() &&
+        date.getFullYear() === today.getFullYear()
+      )
+    }
+  
+    // Render calendar
+    const renderCalendar = () => {
+      const month = currentMonth.getMonth()
+      const year = currentMonth.getFullYear()
+      const daysCount = daysInMonth(month, year)
+      const firstDay = firstDayOfMonth(month, year)
+  
+      const monthNames = [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+      ]
+  
+      const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+  
+      // Create calendar days
+      const days = []
+  
+      // Add empty cells for days before the first day of the month
+      for (let i = 0; i < firstDay; i++) {
+        days.push(<div key={`empty-${i}`} className="h-24 border border-gray-200 bg-gray-50"></div>)
+      }
+  
+      // Add cells for each day of the month
+      for (let day = 1; day <= daysCount; day++) {
+        const date = new Date(year, month, day)
+        const dateString = formatDate(date)
+        const projectsForDay = getProjectsForDate(date)
+  
+        days.push(
+          <div
+            key={day}
+            className={`h-24 border border-gray-200 p-1 overflow-y-auto ${isToday(date) ? "bg-[#fff0e0]" : "bg-white"}`}
+          >
+            <div className="mb-1">
+              <span className={`text-sm font-medium ${isToday(date) ? "text-[#FF8C6B]" : ""}`}>{day}</span>
+            </div>
+            <div className="space-y-1">
+              {projectsForDay.map((project) => {
+                // Determine background and text color based on system category
+                let bgColor = "bg-[#ffece3]"
+                let textColor = "text-[#FF8C6B]"
+  
+                if (project.completed) {
+                  bgColor = "bg-green-100"
+                  textColor = "text-green-800"
+                } else if (project.systemCategory === "Urgent") {
+                  bgColor = "bg-red-100"
+                  textColor = "text-red-800"
+                } else if (project.systemCategory === "Upcoming") {
+                  bgColor = "bg-orange-100"
+                  textColor = "text-orange-800"
+                } else if (project.systemCategory === "Trivial") {
+                  bgColor = "bg-yellow-100"
+                  textColor = "text-yellow-800"
+                }
+  
+                return (
+                  <div
+                    key={project.id}
+                    className={`text-xs p-1 rounded truncate ${bgColor} ${textColor}`}
+                    title={project.name}
+                  >
+                    {project.name}
+                  </div>
+                )
+              })}
+            </div>
+          </div>,
+        )
+      }
+  
+      return (
+        <div className="bg-[#f8eece] rounded-lg p-4">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-bold text-[#FF8C6B]">
+              {monthNames[month]} {year}
+            </h2>
+            <div className="flex space-x-2">
+              <button onClick={prevMonth} className="p-2 rounded-md hover:bg-[#ffece3] text-[#FF8C6B]">
+                <ChevronLeft size={20} />
+              </button>
+              <button onClick={nextMonth} className="p-2 rounded-md hover:bg-[#ffece3] text-[#FF8C6B]">
+                <ChevronRight size={20} />
+              </button>
+            </div>
+          </div>
+  
+          <div className="grid grid-cols-7 gap-1">
+            {/* Day headers */}
+            {dayNames.map((day) => (
+              <div key={day} className="text-center font-medium py-2 text-[#3B0764]">
+                {day}
+              </div>
+            ))}
+  
+            {/* Calendar days */}
+            {days}
+          </div>
+  
+          {getAllProjects().length === 0 && (
+            <div className="mt-6 text-center py-8">
+              <p className="text-gray-500 mb-4">Your projects will appear here when you add them.</p>
+              <button
+                onClick={() => setShowNewProjectModal(true)}
+                className="px-4 py-2 bg-[#FF8C6B] text-white rounded-md hover:bg-[#ff7a55]"
+              >
+                Create Project
+              </button>
+            </div>
+          )}
+        </div>
+      )
+    }
+
   if (loading || !user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -1003,48 +1263,48 @@ export default function HomePage() {
       </div>
     );
   } else {
-    return (
-      <div className="min-h-screen bg-[#f8eece] relative overflow-x-hidden">
-        {/* Sidebar Menu */}
-        <div
-          ref={sidebarRef}
-          className={`fixed top-0 left-0 h-full w-64 bg-[#f8eece] shadow-lg z-50 transform transition-transform duration-300 ease-in-out ${
-            isMenuOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
-        >
-          <div className="p-6">
-            <div className="flex justify-between items-center mb-8">
-              <h2 className="text-5xl font-jomhuria font-bold text-[#FF8C6B]">TabMark</h2>
-              <button onClick={() => setIsMenuOpen(false)} className="text-gray-500 hover:text-gray-700">
-                <X size={20} />
-              </button>
-            </div>
+  return (
+    <div className="min-h-screen bg-[#f8eece] relative overflow-x-hidden [&_button]:cursor-pointer">
+      {/* Sidebar Menu */}
+      <div
+        ref={sidebarRef}
+        className={`fixed top-0 left-0 h-full w-64 bg-[#f8eece] shadow-lg z-50 transform transition-transform duration-300 ease-in-out ${
+          isMenuOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-xl font-bold font-jomhuria text-[#FF8C6B]">TabMark</h2>
+            <button onClick={() => setIsMenuOpen(false)} className="text-gray-500 hover:text-gray-700">
+              <X size={20} />
+            </button>
+          </div>
 
-            {/* All Projects Button */}
-            <div className="mb-6">
+          {/* All Projects Button */}
+          <div className="mb-6">
+            <button
+              onClick={() => {
+                setSelectedUserCategory(null)
+                setSelectedSystemCategory(null)
+                setIsMenuOpen(false)
+              }}
+              className="flex items-center justify-center w-full px-3 py-2 rounded-md transition-colors bg-[#f8eece] hover:bg-[#f5e5b5] text-[#4a2b40] font-medium"
+            >
+              <span>All Projects</span>
+            </button>
+          </div>
+
+          <div>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-sm uppercase text-gray-500 font-medium">Project Categories</h3>
               <button
-                onClick={() => {
-                  setSelectedUserCategory(null)
-                  setSelectedSystemCategory(null)
-                  setIsMenuOpen(false)
-                }}
-                className="flex items-center justify-center w-full px-3 py-2 rounded-md transition-colors bg-[#f8eece] hover:bg-[#f5e5b5] text-[#4a2b40] font-medium"
+                onClick={() => setShowNewCategoryModal(true)}
+                className="bg-[#FF8C6B] text-white hover:bg-[#ff7a55] flex items-center text-sm font-medium px-3 py-1 rounded-md"
               >
-                <span>All Projects</span>
+                <Plus size={16} className="mr-1" />
+                New
               </button>
             </div>
-
-            <div>
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-sm uppercase text-gray-500 font-medium">Project Categories</h3>
-                <button
-                  onClick={() => setShowNewCategoryModal(true)}
-                  className="text-[#4a2b40] hover:text-[#4a2b40] flex items-center text-sm font-medium"
-                >
-                  <Plus size={16} className="mr-1" />
-                  New
-                </button>
-              </div>
 
               {projectCategories.length === 0 ? (
                 <div className="py-4 px-3 bg-[#f8eece] rounded-md text-center mb-4">
@@ -1072,201 +1332,221 @@ export default function HomePage() {
                           {getCategoryIcon(category.icon)}
                           <span>{category.name}</span>
                         </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            initiateEditCategory(category)
-                          }}
-                          className="p-1 text-gray-400 hover:text-[#FF8C6B]"
-                          title="Edit category"
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          initiateEditCategory(category)
+                        }}
+                        className="p-1 text-gray-400 hover:text-[#FF8C6B]"
+                        title="Edit category"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
                         >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                          </svg>
-                        </button>
-                      </div>
-                    </li>
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* New Category Modal */}
+      {showNewCategoryModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div
+            className="fixed inset-0 "
+            style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
+            onClick={() => setShowNewCategoryModal(false)}
+          ></div>
+          <div className="bg-[#f8eece] rounded-2xl shadow-xl w-full max-w-md relative z-10">
+            <div className="px-6 py-4 border-b border-gray-200 rounded-t-2xl">
+              <h2 className="text-xl font-bold text-[#3B0764]">Create New Category</h2>
+              <button
+                onClick={() => setShowNewCategoryModal(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-500"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="px-6 py-4 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[#3B0764] mb-1">Category Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Work Projects, School Assignments"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8C6B]"
+                  value={newCategory.name}
+                  onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#3B0764] mb-1">Description</label>
+                <textarea
+                  placeholder="Enter a description for this category"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8C6B] min-h-[80px]"
+                  value={newCategory.description}
+                  onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#3B0764] mb-1">Icon</label>
+                <div className="grid grid-cols-5 gap-2">
+                  {["briefcase", "user", "book", "search", "heart"].map((icon) => (
+                    <button
+                      key={icon}
+                      type="button"
+                      onClick={() => setNewCategory({ ...newCategory, icon })}
+                      className={`flex items-center justify-center p-2 rounded-md ${
+                        newCategory.icon === icon ? "bg-[#fff0e0] text-[#FF8C6B]" : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {icon === "briefcase" && <Briefcase size={20} />}
+                      {icon === "user" && <User size={20} />}
+                      {icon === "book" && <Book size={20} />}
+                      {icon === "search" && <Search size={20} />}
+                      {icon === "heart" && <Heart size={20} />}
+                    </button>
                   ))}
-                </ul>
-              )}
+                </div>
+              </div>
+            </div>
+            <div className="px-6 py-4 bg-[#f8eece] flex justify-end rounded-b-2xl">
+              <button
+                onClick={() => setShowNewCategoryModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-[#3B0764] mr-2 hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={addNewCategory}
+                className="px-4 py-2 bg-[#FF8C6B] text-white rounded-md hover:bg-[#ff7a55]"
+                disabled={!newCategory.name.trim()}
+              >
+                Create Category
+              </button>
             </div>
           </div>
         </div>
+      )}
 
-        {/* New Category Modal */}
-        {showNewCategoryModal && (
-          <div className="fixed inset-0 flex items-center justify-center z-50">
-            <div className="fixed inset-0 " style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)' }} onClick={() => setShowNewCategoryModal(false)}></div>
-            <div className="bg-[#f8eece] rounded-2xl shadow-xl w-full max-w-md relative z-10">
-              <div className="px-6 py-4 border-b border-gray-200 rounded-t-2xl">
-                <h2 className="text-xl font-bold text-white">Create New Category</h2>
-                <button
-                  onClick={() => setShowNewCategoryModal(false)}
-                  className="absolute top-4 right-4 text-gray-400 hover:text-gray-500"
-                >
-                  <X size={20} />
-                </button>
-              </div>
+      {/* Overlay when menu is open */}
+      {isMenuOpen && (
+        <div
+          className="fixed inset-0 "
+          style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
+          onClick={() => setIsMenuOpen(false)}
+        ></div>
+      )}
 
-              <div className="px-6 py-4 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Category Name</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Work Projects, School Assignments"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8C6B]"
-                    value={newCategory.name}
-                    onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Icon</label>
-                  <div className="grid grid-cols-5 gap-2">
-                    {["briefcase", "user", "book", "search", "heart"].map((icon) => (
-                      <button
-                        key={icon}
-                        type="button"
-                        onClick={() => setNewCategory({ ...newCategory, icon })}
-                        className={`flex items-center justify-center p-2 rounded-md ${
-                          newCategory.icon === icon ? "bg-[#fff0e0] text-[#FF8C6B]" : "bg-gray-100 text-gray-600"
-                        }`}
-                      >
-                        {icon === "briefcase" && <Briefcase size={20} />}
-                        {icon === "user" && <User size={20} />}
-                        {icon === "book" && <Book size={20} />}
-                        {icon === "search" && <Search size={20} />}
-                        {icon === "heart" && <Heart size={20} />}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="px-6 py-4 bg-[#f8eece] flex justify-end rounded-b-2xl">
-                <button
-                  onClick={() => setShowNewCategoryModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 mr-2 hover:bg-gray-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={addNewCategory}
-                  className="px-4 py-2 bg-[#FF8C6B] text-white rounded-md hover:bg-[#ff7a55]"
-                  disabled={!newCategory.name.trim()}
-                >
-                  Create Category
-                </button>
-              </div>
-            </div>
+      {/* Header/Navigation */}
+      <header className="bg-[#FF8C6B] shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 py-3 flex justify-between items-center">
+          <div className="flex items-center">
+            <button
+              className="p-2 rounded-md text-white hover:bg-white/20 focus:outline-none menu-button mr-2"
+              onClick={() => setIsMenuOpen(true)}
+            >
+              <Menu size={24} />
+            </button>
+            <h2 className="text-xl font-bold text-white mr-2">TabMark</h2>
+            <img
+              src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/bookmark-64%281%29-caVEaypHq7HypkUQUhgXo9jXEtcCaE.png"
+              alt="TabMark Logo"
+              className="h-6 w-6 mr-3"
+            />
+            <button className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded-md flex items-center justify-center text-white font-medium transition-colors">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="mr-1"
+              >
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+              FAQ
+            </button>
           </div>
-        )}
 
-        {/* Overlay when menu is open */}
-        {isMenuOpen && (
-          <div className="fixed inset-0 " style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)' }} onClick={() => setIsMenuOpen(false)}></div>
-        )}
-
-        {/* Header/Navigation */}
-        <header className="bg-[#FF8C6B] shadow-sm">
-          <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 py-5 flex justify-between items-center">
-            {/* Left Section: Menu and Title */}
-            <div className="flex items-center w-1/3">
-              <button
-                className="p-2 rounded-md text-white hover:bg-white/20 focus:outline-none menu-button"
-                onClick={() => setIsMenuOpen(true)}
+          {/* Center view toggle buttons with animation - Improved design */}
+          <div className="flex items-center justify-center space-x-2 bg-white/10 p-1 rounded-lg">
+            <button
+              onClick={() => changeViewMode("list")}
+              className={`flex items-center px-3 py-1 rounded-md transition-all duration-300 ${
+                viewMode === "list" ? "bg-white text-[#FF8C6B] font-medium shadow-sm" : "text-white hover:bg-white/20"
+              }`}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="mr-2"
               >
-                <Menu size={28} />
-              </button>
-              <h2 className="text-5xl font-bold font-jomhuria text-white ml-2 mr-4 mt-1 leading-none tracking-wide">TabMark</h2>
-              <button className="ml-2 px-3 py-1 bg-white/20 hover:bg-white/30 rounded-md flex items-center justify-center text-white font-medium transition-colors">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="mr-1"
-                >
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
-                </svg>
-                FAQ
-              </button>
-            </div>
+                <rect x="4" y="5" width="16" height="2" rx="1" fill="currentColor" />
+                <rect x="4" y="11" width="12" height="2" rx="1" fill="currentColor" />
+                <rect x="4" y="17" width="14" height="2" rx="1" fill="currentColor" />
+              </svg>
+              <span>List</span>
+            </button>
 
-            {/* Center Section: View Toggle Buttons */}
-            <div className="flex items-center justify-center space-x-4 bg-[#FF8C6B] p-1 rounded-lg w-1/3">
-              <button
-                onClick={() => changeViewMode("list")}
-                className={`flex items-center px-4 py-2 rounded-md transition-all duration-300 ${
-                  viewMode === "list" ? "bg-white text-[#FF8C6B] font-medium shadow-sm" : "text-white hover:bg-white/20"
-                }`}
+            <button
+              onClick={() => changeViewMode("calendar")}
+              className={`flex items-center px-3 py-1 rounded-md transition-all duration-300 ${
+                viewMode === "calendar"
+                  ? "bg-white text-[#FF8C6B] font-medium shadow-sm"
+                  : "text-white hover:bg-white/20"
+              }`}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="mr-2"
               >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="mr-2"
-                >
-                  <rect x="4" y="5" width="16" height="2" rx="1" fill="currentColor" />
-                  <rect x="4" y="11" width="12" height="2" rx="1" fill="currentColor" />
-                  <rect x="4" y="17" width="14" height="2" rx="1" fill="currentColor" />
-                </svg>
-                <span>List</span>
-              </button>
+                <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" />
+                <path d="M8 2V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                <path d="M16 2V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                <path d="M3 10H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                <circle cx="8" cy="14" r="1" fill="currentColor" />
+                <circle cx="12" cy="14" r="1" fill="currentColor" />
+                <circle cx="16" cy="14" r="1" fill="currentColor" />
+                <circle cx="8" cy="18" r="1" fill="currentColor" />
+                <circle cx="12" cy="18" r="1" fill="currentColor" />
+                <circle cx="16" cy="18" r="1" fill="currentColor" />
+              </svg>
+              <span>Calendar</span>
+            </button>
+          </div>
 
-              <button
-                onClick={() => changeViewMode("calendar")}
-                className={`flex items-center px-4 py-2 rounded-md transition-all duration-300 ${
-                  viewMode === "calendar"
-                    ? "bg-white text-[#FF8C6B] font-medium shadow-sm"
-                    : "text-white hover:bg-white/20"
-                }`}
-              >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="mr-2"
-                >
-                  <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" />
-                  <path d="M8 2V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  <path d="M16 2V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  <path d="M3 10H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  <circle cx="8" cy="14" r="1" fill="currentColor" />
-                  <circle cx="12" cy="14" r="1" fill="currentColor" />
-                  <circle cx="16" cy="14" r="1" fill="currentColor" />
-                  <circle cx="8" cy="18" r="1" fill="currentColor" />
-                  <circle cx="12" cy="18" r="1" fill="currentColor" />
-                  <circle cx="16" cy="18" r="1" fill="currentColor" />
-                </svg>
-                <span>Calendar</span>
-              </button>
-            </div>
-
-            {/* Right Section: Profile and Logout */}
-            <div className="flex items-center justify-end w-1/3 space-x-12">
+          <div className="flex items-center justify-end w-1/3 space-x-12">
               {/* Profile Section */}
               <span className="flex items-center space-x-4">
                 {user && user.photoURL ? (
@@ -1328,389 +1608,268 @@ export default function HomePage() {
                 Logout
               </button>
             </div>
-          </div>
-        </header>
+        </div>
+      </header>
 
-        {/* Main Content */}
-        <main className="max-w-7xl mx-auto px-8 py-4">
-          {/* Display current category name only when a category is selected */}
-          {(selectedSystemCategory || selectedUserCategory || (!selectedSystemCategory && !selectedUserCategory)) && (
-            <div className="mb-8 text-center">
-              <h1 className="text-4xl font-passion-one font-bold text-[#3B0764]">{getCurrentCategoryName()}</h1>
-              {/* {selectedUserCategory && selectedSystemCategory && (
-                <p className="text-gray-500 font-lobster mt-2">
-                  Viewing {selectedSystemCategory} projects in{" "}
-                  {projectCategories.find((c) => c.id === selectedUserCategory)?.name}
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        {/* Display current category name only when a category is selected */}
+        {viewMode === "list" &&
+          (selectedSystemCategory || selectedUserCategory || (!selectedSystemCategory && !selectedUserCategory)) && (
+            <div className="mb-4 text-center">
+              <h1 className="text-2xl font-bold text-[#3B0764]">{getCurrentCategoryName()}</h1>
+              {selectedUserCategory && (
+                <p className="text-gray-600 mt-1">
+                  {projectCategories.find((c) => c.id === selectedUserCategory)?.description || ""}
                 </p>
-              )} */}
+              )}
             </div>
           )}
 
-          {/* Category Boxes - Always visible */}
-          <div className="flex justify-center mb-12 mt-12">
-            <div className="flex space-x-12">
-              {systemCategories.map((category) => (
-                <div
-                  key={category.id}
-                  className="flex flex-col items-center cursor-pointer transition-all duration-200"
-                  onClick={() => selectSystemCategory(category.id)}
-                  style={{
-                    transform: selectedSystemCategory === category.id ? "scale(1.2)" : "scale(1)",
-                  }}
-                >
-                  <span
-                    className={`mb-4 font-medium ${selectedSystemCategory === category.id ? "text-3xl font-bold" : "text-2xl"} font-lobster text-[#3B0764]`}
-                  >
-                    {category.name}
-                  </span>
-                  <div
-                    className={`${category.color} rounded-md transition-all duration-200`}
-                    style={{
-                      width: selectedSystemCategory === category.id ? "70px" : "60px",
-                      height: selectedSystemCategory === category.id ? "46px" : "40px",
-                    }}
-                  ></div>
-                </div>
-              ))}
+        {/* Left and Right Images - Only visible in list view */}
+        {viewMode === "list" && (
+          <div className="flex justify-between items-start mb-6">
+            <div className="w-1/6 max-w-[150px]">
+              <img
+                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/picsvg_download%286%29-YnAo935qL7fcgF7c5yShnlNFY58SW5.svg"
+                alt="Left Decoration"
+                className="w-full h-auto object-contain"
+              />
             </div>
-          </div>
-
-          {/* Welcome message when no category is selected */}
-          {!selectedSystemCategory && !selectedUserCategory && (
-            <div className="text-center py-8 mb-1">
-              <h2 className="text-6xl font-jomhuria tracking-wide font-bold text-[#FF8C6B] mb-3">Welcome to TabMark</h2>
-              <p className="text-lg text-purple-950 max-w-xl mx-auto font-chela-one-regular">
-                Select one of the categories above to see your projects sorted by urgency. You can also create custom
-                categories from the menu on the left.
-              </p>
-            </div>
-          )}
-
-          {/* New Project button - Compact floating design */}
-          <div className="flex justify-center mb-6">
-            <button
-              onClick={() => setShowNewProjectModal(true)}
-              className="flex items-center px-5 py-2 bg-[#FF8C6B] hover:bg-[#ff7a55] text-white rounded-md transition-colors shadow-sm"
-            >
-              <PlusCircle size={18} className="mr-2" />
-              <span className="font-medium font-abril-fatface">New Project</span>
-            </button>
-          </div>
-
-          {/* Content with animation */}
-          <div className={`transition-opacity duration-300 ${isAnimating ? "opacity-0" : "opacity-100"}`}>
-            {viewMode === "list" ? (
-              <>
-                {/* Project Table Header */}
-                <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-[#f8eece] border-b border-[#e6d6a6] mb-2 rounded-t-lg">
-                  <div className="col-span-1"></div>
-                  <div className="col-span-3 font-medium text-[#3B0764] text-base font-passion-one">Project (Window) Name</div>
-                  <div className="col-span-3 font-medium text-[#3B0764] text-base font-passion-one">Progress Bar</div>
-                  <div className="col-span-2 font-medium text-[#3B0764] text-base font-passion-one">Time Left</div>
-                  <div className="col-span-2 font-medium text-[#3B0764] text-base font-passion-one">Difficulty</div>
-                  <div className="col-span-1"></div>
-                </div>
-
-                {/* Project Rows */}
-                {displayProjects.length > 0 ? (
-                  displayProjects.map((project) => (
+            <div className="w-4/6 px-4">
+              {/* Category Boxes - Only visible in list view */}
+              <div className="flex justify-center mb-6">
+                <div className="flex space-x-8 sm:space-x-12">
+                  {systemCategories.map((category) => (
                     <div
-                      key={project.id}
-                      className="grid grid-cols-12 gap-4 px-6 py-4 border-b border-[#e6d6a6] hover:bg-[#f5e5b5] mb-1 bg-[#f8eece] rounded-md"
+                      key={category.id}
+                      className="flex flex-col items-center cursor-pointer transition-all duration-200"
+                      onClick={() => selectSystemCategory(category.id)}
                     >
-                      <div className="col-span-1 flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={project.completed}
-                          onChange={() => initiateCompletion(project.id)}
-                          className="h-5 w-5 text-[#FF8C6B] rounded border-gray-300 focus:ring-[#FF8C6B] cursor-pointer"
-                        />
-                      </div>
-                      <div className="col-span-3 flex items-center">
-                        <span
-                          className={`text-base font-medium ${project.completed ? "text-gray-400 line-through" : "text-[#FF8C6B]"}`}
-                        >
-                          {project.name}
-                        </span>
-                      </div>
-                      <div className="col-span-3 flex items-center">
-                        {/* Custom progress slider with rounded corners when at 100% */}
-                        <div className="w-full flex items-center">
-                          <div className="w-full relative">
-                            <div
-                              className={`absolute top-0 left-0 h-4 bg-[#FF8C6B] ${project.progress === 100 ? "rounded-md" : "rounded-l-md"}`}
-                              style={{ width: `${project.progress}%` }}
-                            ></div>
-                            <div className="w-full h-4 bg-gray-200 rounded-md"></div>
-                            <input
-                              type="range"
-                              min="0"
-                              max="100"
-                              value={project.progress}
-                              onChange={(e) => updateProgress(project.id, Number.parseInt(e.target.value))}
-                              className="absolute top-0 left-0 w-full h-4 opacity-0 cursor-pointer"
-                            />
-                          </div>
-                          <span className="ml-2 text-sm text-gray-500">{project.progress}%</span>
+                      <span
+                        className={`mb-2 font-medium ${selectedSystemCategory === category.id ? "text-xl font-bold" : "text-lg"} text-[#3B0764]`}
+                      >
+                        {category.name}
+                      </span>
+                      <div
+                        className={`${category.color} rounded-md transition-all duration-200`}
+                        style={{
+                          width: selectedSystemCategory === category.id ? "50px" : "40px",
+                          height: selectedSystemCategory === category.id ? "30px" : "24px",
+                        }}
+                      ></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* New Project button - Centered design */}
+              <div className="flex justify-center mb-6">
+                <button
+                  onClick={() => setShowNewProjectModal(true)}
+                  className="flex items-center px-4 py-2 bg-[#FF8C6B] hover:bg-[#ff7a55] text-white rounded-md transition-colors shadow-sm"
+                >
+                  <PlusCircle size={16} className="mr-2" />
+                  <span className="font-medium">New Project</span>
+                </button>
+              </div>
+            </div>
+            <div className="w-1/6 max-w-[150px]">
+              <img
+                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/picsvg_download%288%29-UPk4380C1vou3OkvSWYeyUGBKctqjV.svg"
+                alt="Right Decoration"
+                className="w-full h-auto object-contain"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Content with animation */}
+        <div className={`transition-opacity duration-300 ${isAnimating ? "opacity-0" : "opacity-100"}`}>
+          {viewMode === "list" ? (
+            <>
+              {/* Project Table Header */}
+              <div className="grid grid-cols-12 gap-4 px-6 py-3 border-b border-[#e6d6a6] mb-2">
+                <div className="col-span-1"></div>
+                <div className="col-span-3 font-medium text-[#3B0764] text-base">Project (Window) Name</div>
+                <div className="col-span-3 font-medium text-[#3B0764] text-base">Progress Bar</div>
+                <div className="col-span-2 font-medium text-[#3B0764] text-base">Time Left</div>
+                <div className="col-span-2 font-medium text-[#3B0764] text-base">Difficulty</div>
+                <div className="col-span-1"></div>
+              </div>
+
+              {/* Project Rows */}
+              {displayProjects.length > 0 ? (
+                displayProjects.map((project) => (
+                  <div
+                    key={project.id}
+                    className="grid grid-cols-12 gap-4 px-6 py-3 border-b border-[#e6d6a6] hover:bg-[#f5e5b5] mb-1 rounded-md"
+                  >
+                    <div className="col-span-1 flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={project.completed}
+                        onChange={() => handleCheckboxClick(project)}
+                        className="h-5 w-5 text-[#FF8C6B] rounded border-gray-300 focus:ring-[#FF8C6B] cursor-pointer"
+                      />
+                    </div>
+                    <div className="col-span-3 flex items-center">
+                      <span
+                        className={`text-base font-medium ${project.completed ? "text-gray-400 line-through" : "text-[#FF8C6B]"}`}
+                      >
+                        {project.name}
+                      </span>
+                    </div>
+                    <div className="col-span-3 flex items-center">
+                      {/* Custom progress slider with rounded corners when at 100% */}
+                      <div className="w-full flex items-center">
+                        <div className="w-full relative">
+                          <div
+                            className={`absolute top-0 left-0 h-4 bg-[#FF8C6B] ${project.progress === 100 ? "rounded-md" : "rounded-l-md"}`}
+                            style={{ width: `${project.progress}%` }}
+                          ></div>
+                          <div className="w-full h-4 bg-gray-200 rounded-md"></div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            value={project.progress}
+                            onChange={(e) => updateProgress(project.id, Number.parseInt(e.target.value))}
+                            className="absolute top-0 left-0 w-full h-4 opacity-0 cursor-pointer"
+                          />
                         </div>
-                      </div>
-                      <div className="col-span-2 flex items-center">
-                        <span className="text-base text-gray-700">{project.timeLeft}</span>
-                        {project.timeLeft === "Today" && <AlertTriangle size={18} className="ml-2 text-[#ff5f6d]" />}
-                      </div>
-                      <div className="col-span-2 flex items-center">{getDifficultyIcon(project.difficulty)}</div>
-                      <div className="col-span-1 flex items-center justify-end space-x-2">
-                        <button
-                          onClick={() => initiateEditProject(project)}
-                          className="text-gray-400 hover:text-[#FF8C6B] focus:outline-none"
-                          title="Edit project"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="20"
-                            height="20"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => initiateDelete(project.id)}
-                          className="text-gray-400 hover:text-[#ff5f6d] focus:outline-none"
-                          title="Delete project"
-                        >
-                          <Trash2 size={20} />
-                        </button>
+                        <span className="ml-2 text-sm text-gray-500">{project.progress}%</span>
                       </div>
                     </div>
-                  ))
-                ) : (    // mine start
-          //         <div className="text-center py-8 text-gray-500">No projects in this category yet.</div>
-          //       )}
-          //     </>
-          //   ) : (
-          //     // Calendar view placeholder
-          //     <div className="bg-gray-100 rounded-lg p-8 text-center">
-          //       <h2 className="text-2xl font-bold mb-4">Calendar View</h2>
-          //       <p className="text-gray-600">Calendar view is coming soon!</p>
-          //     </div>
-          //   )}
-          // </main>
-
-          // {/* New Project Modal - Simplified */}
-          // {showNewProjectModal && (
-          //   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          //     <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-          //       {/* Modal Header - Centered Project title */}
-          //       <div className="px-6 py-4 text-center">
-          //         <h2 className="text-xl font-bold text-gray-800">Project</h2>
-          //         <button
-          //           onClick={() => setShowNewProjectModal(false)}
-          //           className="absolute top-4 right-4 text-gray-400 hover:text-gray-500"
-          //         >
-          //           <X size={20} />
-          //         </button>
-          //       </div>
-
-          //       {/* Modal Body */}
-          //       <div className="px-6 py-4 space-y-6">
-          //         {/* Project Name Input */}
-          //         <div>
-          //           <label className="block text-sm font-medium text-gray-700 mb-1">Project Name</label>
-          //           <input
-          //             type="text"
-          //             placeholder="Enter project name"
-          //             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-          //             value={newProject.name}
-          //             onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
-          //           />
-          //         </div>
-
-          //         {/* Due Date - with min date validation */}
-          //         <div>
-          //           <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
-          //           <div className="flex items-center bg-gray-100 rounded-md px-3 py-2">
-          //             <Calendar size={18} className="mr-2 text-gray-500" />
-          //             <input
-          //               type="date"
-          //               className="bg-transparent focus:outline-none w-full"
-          //               value={newProject.dueDate}
-          //               min={today} // Prevent selecting dates before today
-          //               onChange={(e) => setNewProject({ ...newProject, dueDate: e.target.value })}
-          //             />
-          //           </div>
-          //         </div>
-
-          //         {/* Difficulty */}
-          //         <div>
-          //           <label className="block text-sm font-medium text-gray-700 mb-1">Difficulty</label>
-          //           <div className="flex items-center bg-gray-100 rounded-md px-3 py-2">
-          //             <Clock size={18} className="mr-2 text-gray-500" />
-          //             <select
-          //               className="bg-transparent focus:outline-none w-full"
-          //               value={newProject.difficulty}
-          //               onChange={(e) => setNewProject({ ...newProject, difficulty: e.target.value })}
-          //             >
-          //               <option value="Easy">Easy</option>
-          //               <option value="Medium">Medium</option>
-          //               <option value="Hard">Hard</option>
-          //             </select>
-          //           </div>
-          //         </div>
-
-          //         {/* Save Current Tabs Option - Now Purple */}
-          //         <div className="bg-purple-50 rounded-md p-4 border border-purple-100">
-          //           <h3 className="text-lg font-medium text-purple-800 mb-2">Save Current Tabs</h3>
-          //           <p className="text-sm text-purple-600 mb-3">
-          //             Would you like to save all currently open browser tabs with this project?
-          //           </p>
-          //           <div className="flex space-x-4">
-          //             <button
-          //               className={`px-4 py-2 rounded-md ${newProject.saveTabs ? "bg-purple-600 text-white" : "bg-gray-200 text-gray-700"}`}
-          //               onClick={() => setNewProject({ ...newProject, saveTabs: true })}
-          //             >
-          //               Yes
-          //             </button>
-          //             <button
-          //               className={`px-4 py-2 rounded-md ${!newProject.saveTabs ? "bg-purple-600 text-white" : "bg-gray-200 text-gray-700"}`}
-          //               onClick={() => setNewProject({ ...newProject, saveTabs: false })}
-          //             >
-          //               No
-          //             </button>
-          //           </div>
-          //         </div>
-          //       </div>
-
-          //       {/* Modal Footer - Just Create Project button */}
-          //       <div className="px-6 py-4 flex justify-end">
-          //         <button
-          //           onClick={addNewProject}
-          //           className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md font-medium"
-          //         >
-          //           Create Project
-          //         </button>
-          //       </div>
-          //     </div>
-          //   </div>
-          // )}
-
-          // {/* Delete Confirmation Modal */}
-          // {showDeleteConfirm && (
-          //   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          //     <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-          //       <h3 className="text-lg font-bold text-gray-900 mb-4">Confirm Deletion</h3>
-          //       <p className="text-gray-600 mb-6">
-          //         Are you sure you want to delete this project? This action cannot be undone.
-          //       </p>
-
-          //       <div className="flex justify-end space-x-4">
-          //         <button
-          //           onClick={() => setShowDeleteConfirm(false)}
-          //           className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
-          //         >
-          //           Cancel
-          //         </button>
-          //         <button onClick={confirmDelete} className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
-          //           Delete
-          //         </button>
-          //       </div>
-              
-                  <div className="text-center py-12 bg-[#f8eece] rounded-lg">
-                    <div className="flex flex-col items-center">
-                      <div className="mb-4">
+                    <div className="col-span-2 flex items-center">
+                      <span className="text-base text-gray-700">{project.timeLeft}</span>
+                      {project.timeLeft === "Today" && <AlertTriangle size={18} className="ml-2 text-[#ff5f6d]" />}
+                    </div>
+                    <div className="col-span-2 flex items-center">{getDifficultyIcon(project.difficulty)}</div>
+                    <div className="col-span-1 flex items-center justify-end space-x-2">
+                      <button
+                        onClick={() => initiateEditProject(project)}
+                        className="text-gray-400 hover:text-[#FF8C6B] focus:outline-none"
+                        title="Edit project"
+                      >
                         <svg
-                          width="64"
-                          height="64"
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="20"
+                          height="20"
                           viewBox="0 0 24 24"
                           fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="text-gray-300"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
                         >
-                          <path
-                            d="M19 3H5C3.89543 3 3 3.89543 3 5V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V5C21 3.89543 20.1046 3 19 3Z"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                          <path
-                            d="M12 8V16"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                          <path
-                            d="M8 12H16"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                         </svg>
-                      </div>
-                      <h3 className="text-xl font-nova-square-regular font-medium text-[#FF8C6B] mb-2">No projects yet</h3>
-                      <p className="text-gray-500 mb-4 font-chela-one-regular">Get started by creating your first project!</p>
+                      </button>
                       <button
-                        onClick={() => setShowNewProjectModal(true)}
-                        className="px-4 py-2 bg-[#FF8C6B] text-white font-abril-fatface rounded-md hover:bg-[#ff7a55]"
+                        onClick={() => initiateDelete(project.id)}
+                        className="text-gray-400 hover:text-[#ff5f6d] focus:outline-none"
+                        title="Delete project"
                       >
-                        Create Project
+                        <Trash2 size={20} />
                       </button>
                     </div>
                   </div>
-                )}
-              </>
-            ) : (
-              // Calendar view placeholder
-              <div className="bg-[#f8eece] rounded-lg p-8 text-center">
-                <h2 className="text-2xl font-bold text-[#FF8C6B] mb-4">Calendar View</h2>
-                <p className="text-gray-600">Calendar view is coming soon!</p>
-              </div>
-            )}
-          </div>
-        </main>
-
-        {/* New Project Modal - Updated with category selection */}
-        {showNewProjectModal && (
-          <div className="fixed inset-0 flex items-center justify-center z-50">
-            <div className="fixed inset-0 " style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)' }} onClick={() => setShowNewProjectModal(false)}></div>
-            <div className="bg-[#f8eece] rounded-2xl shadow-xl w-full max-w-md relative z-10">
-              {/* Modal Header - Centered Project title */}
-              <div className="px-6 py-4 text-center rounded-t-2xl">
-                <h2 className="text-xl font-bold text-white">Project</h2>
-                <button
-                  onClick={() => setShowNewProjectModal(false)}
-                  className="absolute top-4 right-4 text-gray-400 hover:text-gray-500"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-
-              {/* Modal Body */}
-              <div className="px-6 py-4 space-y-6">
-                {/* Project Name Input */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Project Name</label>
-                  <input
-                    type="text"
-                    placeholder="Enter project name"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8C6B]"
-                    value={newProject.name}
-                    onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
-                  />
+                ))
+              ) : (
+                <div className="text-center py-8 rounded-lg">
+                  <div className="flex flex-col items-center">
+                    <div className="mb-4">
+                      <svg
+                        width="64"
+                        height="64"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="text-gray-300"
+                      >
+                        <path
+                          d="M19 3H5C3.89543 3 3 3.89543 3 5V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V5C21 3.89543 20.1046 3 19 3Z"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M12 8V16"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M8 12H16"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </div>
+                    <h3 className="text-xl font-medium text-[#FF8C6B] mb-2">No projects yet</h3>
+                    <p className="text-gray-500 mb-4">Get started by creating your first project</p>
+                    <button
+                      onClick={() => setShowNewProjectModal(true)}
+                      className="px-4 py-2 bg-[#FF8C6B] text-white rounded-md hover:bg-[#ff7a55]"
+                    >
+                      Create Project
+                    </button>
+                  </div>
                 </div>
+              )}
+            </>
+          ) : (
+            // Calendar view
+            renderCalendar()
+          )}
+        </div>
+      </main>
 
-                {/* Due Date - with min date validation */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
-                  <div className="flex items-center bg-[#f8eece] rounded-md px-3 py-2">
+      {/* New Project Modal - Updated with category selection */}
+      {showNewProjectModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div
+            className="fixed inset-0 "
+            style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
+            onClick={() => setShowNewProjectModal(false)}
+          ></div>
+          <div className="bg-[#f8eece] rounded-2xl shadow-xl w-full max-w-md relative z-10">
+            {/* Modal Header - Centered Project title */}
+            <div className="px-6 py-4 text-center rounded-t-2xl">
+              <h2 className="text-xl font-bold text-[#3B0764]">Project</h2>
+              <button
+                onClick={() => setShowNewProjectModal(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-500"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="px-6 py-4 space-y-6">
+              {/* Project Name Input */}
+              <div>
+                <label className="block text-sm font-medium text-[#3B0764] mb-1">Project Name</label>
+                <input
+                  type="text"
+                  placeholder="Enter project name"
+                  className="w-full px-3 py-2 border border-purple-950 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8C6B]"
+                  value={newProject.name}
+                  onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
+                />
+              </div>
+
+              {/* Due Date - with min date validation */}
+              <div>
+                <label className="block text-sm font-medium text-[#3B0764] mb-1">Due Date</label>
+                <div className="bg-[#fff0e0] rounded-md p-4 border border-[#ffd0b5]">
+                  <div className="flex items-center bg-white rounded-md px-3 py-2">
                     <Calendar size={18} className="mr-2 text-[#FF8C6B]" />
                     <input
                       type="date"
@@ -1721,11 +1880,13 @@ export default function HomePage() {
                     />
                   </div>
                 </div>
+              </div>
 
-                {/* Difficulty */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Difficulty</label>
-                  <div className="flex items-center bg-[#f8eece] rounded-md px-3 py-2">
+              {/* Difficulty */}
+              <div>
+                <label className="block text-sm font-medium text-[#3B0764] mb-1">Difficulty</label>
+                <div className="bg-[#fff0e0] rounded-md p-4 border border-[#ffd0b5]">
+                  <div className="flex items-center bg-white rounded-md px-3 py-2">
                     <Clock size={18} className="mr-2 text-[#FF8C6B]" />
                     <select
                       className="bg-transparent focus:outline-none w-full"
@@ -1738,176 +1899,186 @@ export default function HomePage() {
                     </select>
                   </div>
                 </div>
-
-                {/* Category Selection - Only show if no user category is selected */}
-                {!selectedUserCategory && projectCategories.length > 0 && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Project Category</label>
-                    <div className="flex items-center bg-[#f8eece] rounded-md px-3 py-2">
-                      <Briefcase size={18} className="mr-2 text-[#FF8C6B]" />
-                      <select
-                        className="bg-transparent focus:outline-none w-full"
-                        value={newProject.category || ""}
-                        onChange={(e) => setNewProject({ ...newProject, category: e.target.value || null })}
-                      >
-                        <option value="">No specific category</option>
-                        {projectCategories.map((category) => (
-                          <option key={category.id} value={category.id}>
-                            {category.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                )}
-
-                {/* Show selected category if user category is selected */}
-                {selectedUserCategory && (
-                  <div className="bg-[#fff0e0] rounded-md p-3 border border-[#ffd0b5]">
-                    <div className="flex items-center">
-                      <Briefcase size={18} className="mr-2 text-[#FF8C6B]" />
-                      <span className="text-sm font-medium text-[#FF8C6B]">
-                        Creating in: {projectCategories.find((c) => c.id === selectedUserCategory)?.name}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Save Current Tabs Option - Orange */}
-                <div className="bg-[#fff0e0] rounded-md p-4 border border-[#ffd0b5]">
-                  <h3 className="text-lg font-medium text-[#FF8C6B] mb-2">Save Current Tabs</h3>
-                  <p className="text-sm text-[#FF8C6B] mb-3">
-                    Would you like to save all currently open browser tabs with this project?
-                  </p>
-                  <div className="flex space-x-4">
-                    <button
-                      className={`px-4 py-2 rounded-md ${newProject.saveTabs ? "bg-[#FF8C6B] text-white hover:bg-[#ff7a55]" : "bg-gray-200 text-gray-700"}`}
-                      onClick={() => setNewProject({ ...newProject, saveTabs: true })}
-                    >
-                      Yes
-                    </button>
-                    <button
-                      className={`px-4 py-2 rounded-md ${!newProject.saveTabs ? "bg-[#FF8C6B] text-white hover:bg-[#ff7a55]" : "bg-gray-200 text-gray-700"}`}
-                      onClick={() => setNewProject({ ...newProject, saveTabs: false })}
-                    >
-                      No
-                    </button>
-                  </div>
-                </div>
               </div>
 
-              {/* Modal Footer - Just Create Project button */}
-              <div className="px-6 py-4 flex justify-end rounded-b-2xl">
-                <button
-                  onClick={addNewProject}
-                  className="bg-[#FF8C6B] hover:bg-[#ff7a55] text-white px-4 py-2 rounded-md font-medium"
-                >
-                  Create Project
-                </button>
-              </div>
-            </div>
-          </div>
-          )}
-
-        {/* Delete Confirmation Modal */}
-        {showDeleteConfirm && (
-          <div className="fixed inset-0 flex items-center justify-center z-50">
-            <div className="fixed inset-0 " style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)' }} onClick={() => setShowDeleteConfirm(false)}></div>
-            <div className="bg-[#f8eece] rounded-2xl shadow-xl w-full max-w-md p-6 relative z-10">
-              <h3 className="text-lg font-bold text-[#FF8C6B] mb-4">Confirm Deletion</h3>
-              <p className="text-gray-600 mb-6">
-                Are you sure you want to delete this project? This action cannot be undone.
-              </p>
-
-              <div className="flex justify-end space-x-4">
-                <button
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmDelete}
-                  className="px-4 py-2 bg-[#ff5f6d] text-white rounded-md hover:bg-[#ff4957]"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Completion Confirmation Modal */}
-        {showCompletionConfirm && (
-          <div className="fixed inset-0 flex items-center justify-center z-50">
-            <div className="fixed inset-0 " style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)' }} onClick={() => setShowCompletionConfirm(false)}></div>
-            <div className="bg-[#f8eece] rounded-2xl shadow-xl w-full max-w-md p-6 relative z-10">
-              <div className="flex items-center mb-4">
-                <Check size={24} className="text-green-500 mr-2" />
-                <h3 className="text-lg font-bold text-[#FF8C6B]">Project Completion</h3>
-              </div>
-              <p className="text-gray-600 mb-6">Have you completed this project? It will be marked as completed.</p>
-
-              <div className="flex justify-end space-x-4">
-                <button
-                  onClick={() => setShowCompletionConfirm(false)}
-                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
-                >
-                  No
-                </button>
-                <button
-                  onClick={confirmCompletion}
-                  className="px-4 py-2 bg-[#FF8C6B] text-white rounded-md hover:bg-[#3a1f30]"
-                >
-                  Yes, Complete
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Edit Project Modal */}
-        {showEditProjectModal && projectToEdit && (
-          <div className="fixed inset-0 flex items-center justify-center">
-            <div
-              className="fixed inset-0"
-              style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)' }}
-              onClick={() => {
-                setShowEditProjectModal(false)
-                setProjectToEdit(null)
-              }}
-            ></div>
-            <div className="bg-[#f8eece] rounded-2xl shadow-xl w-full max-w-md relative z-10">
-              <div className="px-6 py-4 text-center rounded-t-2xl">
-                <h2 className="text-xl font-bold text-white">Edit Project</h2>
-                <button
-                  onClick={() => {
-                    setShowEditProjectModal(false)
-                    setProjectToEdit(null)
-                  }}
-                  className="absolute top-4 right-4 text-gray-400 hover:text-gray-500"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-
-              <div className="px-6 py-4 space-y-6">
-                {/* Project Name Input */}
+              {/* Category Selection - Only show if no user category is selected */}
+              {!selectedUserCategory && projectCategories.length > 0 && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Project Name</label>
-                  <input
-                    type="text"
-                    placeholder="Enter project name"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8C6B]"
-                    value={projectToEdit.name}
-                    onChange={(e) => setProjectToEdit({ ...projectToEdit, name: e.target.value })}
-                  />
-                </div>
-
-                {/* Due Date */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                  <label className="block text-sm font-medium text-[#3B0764] mb-1">Project Category</label>
                   <div className="flex items-center bg-[#f8eece] rounded-md px-3 py-2">
+                    <Briefcase size={18} className="mr-2 text-[#FF8C6B]" />
+                    <select
+                      className="bg-transparent focus:outline-none w-full"
+                      value={newProject.category || ""}
+                      onChange={(e) => setNewProject({ ...newProject, category: e.target.value || null })}
+                    >
+                      <option value="">No specific category</option>
+                      {projectCategories.map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* Show selected category if user category is selected */}
+              {selectedUserCategory && (
+                <div className="bg-[#fff0e0] rounded-md p-3 border border-[#ffd0b5]">
+                  <div className="flex items-center">
+                    <Briefcase size={18} className="mr-2 text-[#FF8C6B]" />
+                    <span className="text-sm font-medium text-[#FF8C6B]">
+                      Creating in: {projectCategories.find((c) => c.id === selectedUserCategory)?.name}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Save Current Tabs Option - Orange */}
+              <div className="bg-[#fff0e0] rounded-md p-4 border border-[#ffd0b5]">
+                <h3 className="text-lg font-medium text-[#FF8C6B] mb-2">Save Current Tabs</h3>
+                <p className="text-sm text-[#FF8C6B] mb-3">
+                  Would you like to save all currently open browser tabs with this project?
+                </p>
+                <div className="flex space-x-4">
+                  <button
+                    className={`px-4 py-2 rounded-md ${newProject.saveTabs ? "bg-[#FF8C6B] text-white hover:bg-[#ff7a55]" : "bg-gray-200 text-gray-700"}`}
+                    onClick={() => setNewProject({ ...newProject, saveTabs: true })}
+                  >
+                    Yes
+                  </button>
+                  <button
+                    className={`px-4 py-2 rounded-md ${!newProject.saveTabs ? "bg-[#FF8C6B] text-white hover:bg-[#ff7a55]" : "bg-gray-200 text-purple-950"}`}
+                    onClick={() => setNewProject({ ...newProject, saveTabs: false })}
+                  >
+                    No
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer - Just Create Project button */}
+            <div className="px-6 py-4 flex justify-end rounded-b-2xl">
+              <button
+                onClick={addNewProject}
+                className="bg-[#FF8C6B] hover:bg-[#ff7a55] text-white px-4 py-2 rounded-md font-medium"
+              >
+                Create Project
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div
+            className="fixed inset-0 "
+            style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
+            onClick={() => setShowDeleteConfirm(false)}
+          ></div>
+          <div className="bg-[#f8eece] rounded-2xl shadow-xl w-full max-w-md p-6 relative z-10">
+            <h3 className="text-lg font-bold text-[#FF8C6B] mb-4">Confirm Deletion</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete this project? This action cannot be undone.
+            </p>
+
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-[#ff5f6d] text-white rounded-md hover:bg-[#ff4957]"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Completion Confirmation Modal */}
+      {showCompletionConfirm && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div
+            className="fixed inset-0 "
+            style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
+            onClick={() => setShowCompletionConfirm(false)}
+          ></div>
+          <div className="bg-[#f8eece] rounded-2xl shadow-xl w-full max-w-md p-6 relative z-10">
+            <div className="flex items-center mb-4">
+              <Check size={24} className="text-green-500 mr-2" />
+              <h3 className="text-lg font-bold text-[#FF8C6B]">Project Completion</h3>
+            </div>
+            <p className="text-gray-600 mb-6">Have you completed this project? It will be marked as completed.</p>
+
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={() => setShowCompletionConfirm(false)}
+                className="px-4 py-2 bg-gray-200 text-[#3B0764] rounded-md hover:bg-gray-300"
+              >
+                No
+              </button>
+              <button
+                onClick={confirmCompletion}
+                className="px-4 py-2 bg-[#FF8C6B] text-white rounded-md hover:bg-[#3a1f30]"
+              >
+                Yes, Complete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Project Modal */}
+      {showEditProjectModal && projectToEdit && (
+        <div className="fixed inset-0 flex items-center justify-center">
+          <div
+            className="fixed inset-0"
+            style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
+            onClick={() => {
+              setShowEditProjectModal(false)
+              setProjectToEdit(null)
+            }}
+          ></div>
+          <div className="bg-[#f8eece] rounded-2xl shadow-xl w-full max-w-md relative z-10">
+            <div className="px-6 py-4 text-center rounded-t-2xl">
+              <h2 className="text-xl font-bold text-purple-950">Edit Project</h2>
+              <button
+                onClick={() => {
+                  setShowEditProjectModal(false)
+                  setProjectToEdit(null)
+                }}
+                className="absolute top-4 right-4 text-purple-950 hover:text-gray-500"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="px-6 py-4 space-y-6">
+              {/* Project Name Input */}
+              <div>
+                <label className="block text-sm font-medium text-[#3B0764] mb-1">Project Name</label>
+                <input
+                  type="text"
+                  placeholder="Enter project name"
+                  className="w-full px-3 py-2 border border-purple-950 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8C6B]"
+                  value={projectToEdit.name}
+                  onChange={(e) => setProjectToEdit({ ...projectToEdit, name: e.target.value })}
+                />
+              </div>
+
+              {/* Due Date */}
+              <div>
+                <label className="block text-sm font-medium text-[#3B0764] mb-1">Due Date</label>
+                <div className="bg-[#fff0e0] rounded-md p-4 border border-[#ffd0b5]">
+                  <div className="flex items-center bg-white rounded-md px-3 py-2">
                     <Calendar size={18} className="mr-2 text-[#FF8C6B]" />
                     <input
                       type="date"
@@ -1918,11 +2089,13 @@ export default function HomePage() {
                     />
                   </div>
                 </div>
+              </div>
 
-                {/* Difficulty */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Difficulty</label>
-                  <div className="flex items-center bg-[#f8eece] rounded-md px-3 py-2">
+              {/* Difficulty */}
+              <div>
+                <label className="block text-sm font-medium text-[#3B0764] mb-1">Difficulty</label>
+                <div className="bg-[#fff0e0] rounded-md p-4 border border-[#ffd0b5]">
+                  <div className="flex items-center bg-white rounded-md px-3 py-2">
                     <Clock size={18} className="mr-2 text-[#FF8C6B]" />
                     <select
                       className="bg-transparent focus:outline-none w-full"
@@ -1935,74 +2108,74 @@ export default function HomePage() {
                     </select>
                   </div>
                 </div>
+              </div>
 
-                {/* Category Selection */}
-                {projectCategories.length > 0 && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Project Category</label>
-                    <div className="flex items-center bg-[#f8eece] rounded-md px-3 py-2">
-                      <Briefcase size={18} className="mr-2 text-[#FF8C6B]" />
-                      <select
-                        className="bg-transparent focus:outline-none w-full"
-                        value={projectToEdit.userCategory || ""}
-                        onChange={(e) => {
-                          const newCategoryId = e.target.value || null
-                          setProjectToEdit({ ...projectToEdit, userCategory: newCategoryId })
-                        }}
-                      >
-                        <option value="">No specific category</option>
-                        {projectCategories.map((category) => (
-                          <option key={category.id} value={category.id}>
-                            {category.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+              {/* Category Selection */}
+              {projectCategories.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-[#3B0764] mb-1">Project Category</label>
+                  <div className="flex items-center bg-[#f8eece] rounded-md px-3 py-2">
+                    <Briefcase size={18} className="mr-2 text-[#FF8C6B]" />
+                    <select
+                      className="bg-transparent focus:outline-none w-full"
+                      value={projectToEdit.userCategory || ""}
+                      onChange={(e) => {
+                        const newCategoryId = e.target.value || null
+                        setProjectToEdit({ ...projectToEdit, userCategory: newCategoryId })
+                      }}
+                    >
+                      <option value="">No specific category</option>
+                      {projectCategories.map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
+            </div>
 
-              <div className="px-6 py-4 flex justify-end rounded-b-2xl">
-                <button
-                  onClick={() => {
-                    setShowEditProjectModal(false)
-                    setProjectToEdit(null)
-                  }}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 mr-2 hover:bg-gray-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={saveEditedProject}
-                  className="bg-[#FF8C6B] hover:bg-[#ff7a55] text-white px-4 py-2 rounded-md font-medium"
-                >
-                  Save Changes
-                </button>
-              </div>
+            <div className="px-6 py-4 flex justify-end rounded-b-2xl">
+              <button
+                onClick={() => {
+                  setShowEditProjectModal(false)
+                  setProjectToEdit(null)
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-md text-purple-950 mr-2 hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveEditedProject}
+                className="bg-[#FF8C6B] hover:bg-[#ff7a55] text-white px-4 py-2 rounded-md font-medium"
+              >
+                Save Changes
+              </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-              {/* Edit Category Modal */}
-              {showEditCategoryModal && categoryToEdit && (
-          <div className="fixed inset-0 flex items-center justify-center z-50">
-            <div
-              className="fixed inset-0"
-              style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
+      {/* Edit Category Modal */}
+      {showEditCategoryModal && categoryToEdit && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div>
+            <div className="fixed inset-0 " style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}>
               onClick={() => {
-                setShowEditCategoryModal(false);
-                setcategoryToEdit(null);
+                setShowEditCategoryModal(false)
+                setcategoryToEdit(null)
               }}
-            ></div>
+            </div>
             <div className="bg-[#f8eece] rounded-2xl shadow-xl w-full max-w-md relative z-10">
               <div className="px-6 py-4 border-b border-gray-200 rounded-t-2xl">
-                <h2 className="text-xl font-bold text-white">Edit Category</h2>
+                <h2 className="text-xl font-bold text-purple-950">Edit Category</h2>
                 <button
                   onClick={() => {
-                    setShowEditCategoryModal(false);
-                    setcategoryToEdit(null);
+                    setShowEditCategoryModal(false)
+                    setcategoryToEdit(null)
                   }}
-                  className="absolute top-4 right-4 text-gray-400 hover:text-gray-500"
+                  className="absolute top-4 right-4 text-purple-950 hover:text-gray-500"
                 >
                   <X size={20} />
                 </button>
@@ -2010,24 +2183,28 @@ export default function HomePage() {
 
               <div className="px-6 py-4 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Category Name
-                  </label>
+                  <label className="block text-sm font-medium text-purple-950 mb-1">Category Name</label>
                   <input
                     type="text"
                     placeholder="e.g. Work Projects, School Assignments"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8C6B]"
+                    className="w-full px-3 py-2 border border-purple-950 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8C6B]"
                     value={categoryToEdit.name}
-                    onChange={(e) =>
-                      setcategoryToEdit({ ...categoryToEdit, name: e.target.value })
-                    }
+                    onChange={(e) => setcategoryToEdit({ ...categoryToEdit, name: e.target.value })}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Icon
-                  </label>
+                  <label className="block text-sm font-medium text-purple-950 mb-1">Description</label>
+                  <textarea
+                    placeholder="Enter a description for this category"
+                    className="w-full px-3 py-2 border border-purple-950 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8C6B] min-h-[80px]"
+                    value={categoryToEdit.description || ""}
+                    onChange={(e) => setcategoryToEdit({ ...categoryToEdit, description: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-purple-950 mb-1">Icon</label>
                   <div className="grid grid-cols-5 gap-2">
                     {["briefcase", "user", "book", "search", "heart"].map((icon) => (
                       <button
@@ -2035,9 +2212,7 @@ export default function HomePage() {
                         type="button"
                         onClick={() => setcategoryToEdit({ ...categoryToEdit, icon })}
                         className={`flex items-center justify-center p-2 rounded-md ${
-                          categoryToEdit.icon === icon
-                            ? "bg-[#fff0e0] text-[#FF8C6B]"
-                            : "bg-gray-100 text-gray-600"
+                          categoryToEdit.icon === icon ? "bg-[#fff0e0] text-[#FF8C6B]" : "bg-gray-100 text-purple-950"
                         }`}
                       >
                         {icon === "briefcase" && <Briefcase size={20} />}
@@ -2054,10 +2229,10 @@ export default function HomePage() {
               <div className="px-6 py-4 bg-[#f8eece] flex justify-end rounded-b-2xl">
                 <button
                   onClick={() => {
-                    setShowEditCategoryModal(false);
-                    setcategoryToEdit(null);
+                    setShowEditCategoryModal(false)
+                    setcategoryToEdit(null)
                   }}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 mr-2 hover:bg-gray-100"
+                  className="px-4 py-2 border border-purple-950 rounded-md text-purple-950 mr-2 hover:bg-gray-100"
                 >
                   Cancel
                 </button>
@@ -2071,8 +2246,42 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-        )}
-      </div> 
-      );
-    }
+        </div>
+      )}
+      {/* Unarchive Confirmation Modal */}
+      {showUnarchiveConfirm && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div
+            className="fixed inset-0"
+            style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
+            onClick={() => setShowUnarchiveConfirm(false)}
+          ></div>
+          <div className="bg-[#f8eece] rounded-2xl shadow-xl w-full max-w-md p-6 relative z-10">
+            <div className="flex items-center mb-4">
+              <h3 className="text-lg font-bold text-[#FF8C6B]">Unarchive Project</h3>
+            </div>
+            <p className="text-gray-600 mb-6">
+              Do you want to mark this project as incomplete and move it back to its original category?
+            </p>
+
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={() => setShowUnarchiveConfirm(false)}
+                className="px-4 py-2 bg-gray-200 text-[#3B0764] rounded-md hover:bg-gray-300"
+              >
+                No
+              </button>
+              <button
+                onClick={confirmUnarchive}
+                className="px-4 py-2 bg-[#FF8C6B] text-white rounded-md hover:bg-[#ff7a55]"
+              >
+                Yes, Unarchive
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  ) // Closing the return statement
+ }
 }
