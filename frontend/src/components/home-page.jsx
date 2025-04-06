@@ -323,7 +323,6 @@ export default function HomePage() {
     { id: "All", name: "All", color: "bg-blue-500" },
     { id: "Urgent", name: "Urgent", color: "bg-red-500" },
     { id: "Upcoming", name: "Upcoming", color: "bg-orange-500" },
-    { id: "Close", name: "Close", color: "bg-yellow-400" },
     { id: "Trivial", name: "Trivial", color: "bg-green-500" },
     { id: "Archived", name: "Archived", color: "bg-gray-400" },
   ]
