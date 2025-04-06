@@ -165,13 +165,12 @@ export default function HomePage() {
       dueDate: newProject.dueDate,
       difficulty: newProject.difficulty,
       category: selectedCategory, // Use the currently selected category
-      alert: isDueToday(newProject.dueDate),
       completed: false,
     };
-
+  
     // Add the project to the local state
     setProjects([...projects, { ...projectData, timeLeft: calculateTimeLeft(newProject.dueDate) }]);
-
+  
     // Call the Firebase upload function
     uploadProjectToFirestore({
       userId,
@@ -184,16 +183,16 @@ export default function HomePage() {
         console.error("Error uploading project:", error);
       },
     });
-
+  
     // Reset form and close modal
     setNewProject({
       name: "",
       dueDate: today,
       difficulty: "Easy",
       saveTabs: true,
-    })
-    setShowNewProjectModal(false)
-  }
+    });
+    setShowNewProjectModal(false);
+  };
 
   // Helper function to calculate time left text
   const calculateTimeLeft = (dueDate) => {
@@ -210,18 +209,6 @@ export default function HomePage() {
     if (diffDays < 14) return "1 week left"
     if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks left`
     return `${Math.floor(diffDays / 30)} months left`
-  }
-
-  // Helper function to check if due date is today
-  const isDueToday = (dueDate) => {
-    if (!dueDate) return false
-
-    const due = new Date(dueDate)
-    const now = new Date()
-
-    return (
-      due.getDate() === now.getDate() && due.getMonth() === now.getMonth() && due.getFullYear() === now.getFullYear()
-    )
   }
 
   // Helper function to get days difference

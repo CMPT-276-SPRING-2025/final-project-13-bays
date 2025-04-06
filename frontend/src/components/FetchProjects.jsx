@@ -24,6 +24,7 @@ export default function FetchProjectsFromFirestore({ userId, onProjectsFetched }
           querySnapshot.docs.map(async (docSnapshot) => {
             const project = { id: docSnapshot.id, ...docSnapshot.data() };
             const timeLeft = calculateTimeLeft(project.dueDate); // Calculate timeLeft dynamically
+            const alert = timeLeft === "Today"; // Set alert to true if timeLeft is "Today"
 
             // Determine the category based on timeLeft and archived
             let category = project.category; // Default category
@@ -37,18 +38,18 @@ export default function FetchProjectsFromFirestore({ userId, onProjectsFetched }
               }
             }
 
-            // Update Firestore if the category has changed
-            if (project.category !== category) {
+            // Update Firestore if the category or alert has changed
+            if (project.category !== category || project.alert !== alert) {
               await modifyProjectInFirestore({
                 userId,
                 projectId: project.id.toString(),
-                updatedData: { category },
-                onSuccess: () => console.log(`Category updated for project ${project.id}`),
-                onError: (error) => console.error(`Error updating category for project ${project.id}:`, error),
+                updatedData: { category, alert },
+                onSuccess: () => console.log(`Project ${project.id} updated successfully!`),
+                onError: (error) => console.error(`Error updating project ${project.id}:`, error),
               });
             }
 
-            return { ...project, timeLeft, category }; // Add timeLeft and category to the project object
+            return { ...project, timeLeft, category, alert }; // Add timeLeft, category, and alert to the project object
           })
         );
 
