@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef} from "react"
+import { useEffect, useState, useRef, useMemo} from "react"
 import { auth, storage } from "../firebase-config.js"
 import { useNavigate } from "react-router-dom"
 import { onAuthStateChanged, signOut, updateProfile } from "firebase/auth"
@@ -49,8 +49,6 @@ export default function HomePage() {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
-        const userId = auth.currentUser?.uid
-        const userName = auth.currentUser?.displayName
       } else {
         setUser(null)
         navigate("/sign-up"); // Move navigate() inside useEffect
@@ -58,6 +56,8 @@ export default function HomePage() {
       setLoading(false)
     })},[navigate]);
 
+  const userId = auth.currentUser?.uid
+  const userName = auth.currentUser?.displayName
     
   // const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
   //   if (currentUser) {
@@ -315,7 +315,7 @@ export default function HomePage() {
   const confirmDelete = () => {
     if (projectToDelete !== null) {
       deleteProjectFromFirestore({
-        userId,
+        userId: user.uid,
         projectId: projectToDelete.toString(),
         onSuccess: () => {
           // Remove the project from local state
@@ -404,16 +404,16 @@ export default function HomePage() {
       setProjects(
         projects.map((project) =>
           project.id === projectToComplete
-            ? { ...project, category: "Archived", completed: true }
+            ? { ...project, category: "Completed", completed: true }
             : project
         )
       );
   
       // Update the project in Firestore
       modifyProjectInFirestore({
-        userId,
+        userId: user.uid,
         projectId: projectToComplete.toString(),
-        updatedData: { category: "Archived", completed: true },
+        updatedData: { systemCategory: "Completed", completed: true },
         onSuccess: () => {
           console.log("Project marked as completed and updated in Firestore!");
         },
@@ -439,7 +439,7 @@ export default function HomePage() {
   
     // Update the project in Firestore
     modifyProjectInFirestore({
-      userId,
+      userId: user.uid,
       projectId: id.toString(),
       updatedData: { progress: newProgress },
       onSuccess: () => {
@@ -458,7 +458,7 @@ export default function HomePage() {
       return;
     }
   
-    if (!userId) {
+    if (!user.uid) {
       toast.error("User ID is missing. Please log in.");
       return;
     }
@@ -471,7 +471,7 @@ export default function HomePage() {
       progress: 0,
       dueDate: newProject.dueDate,
       difficulty: newProject.difficulty,
-      category: selectedCategory, // Use the currently selected category
+      systemCategory: "Default", // Use the currently selected category
       completed: false,
     };
   
@@ -480,8 +480,8 @@ export default function HomePage() {
   
     // Call the Firebase upload function
     uploadProjectToFirestore({
-      userId,
-      userName,
+      userId: user.uid,
+      userName: user.displayName,
       projectData,
       onSuccess: () => {
         console.log("Project uploaded successfully!");
@@ -497,7 +497,7 @@ export default function HomePage() {
       dueDate: today,
       difficulty: "Easy",
       saveTabs: true,
-      category: null,
+      userCategory: null,
     })
     setShowNewProjectModal(false)
   }
@@ -563,52 +563,69 @@ export default function HomePage() {
   }
 
   // possible conflict
-  // const filteredProjects =
-  //   selectedCategory === "All" ? projects : projects.filter((project) => project.category === selectedCategory)
+// Replace the existing filteredProjects definition with this more comprehensive version
+  const filteredProjects = useMemo(() => {
+    // When no category is selected (global homepage with "Welcome to TabMark"), show all projects
+    if (!selectedSystemCategory && !selectedUserCategory) {
+      // Return all projects sorted by due date (earliest first) - also dont want completed projects in global view
+      return [...projects].filter(project => project.systemCategory !== "Completed").sort((a, b) => {
+        // Handle projects without due dates (put them at the end)
+        if (!a.dueDate) return 1;
+        if (!b.dueDate) return -1;
+        // Compare due dates
+        return new Date(a.dueDate) - new Date(b.dueDate);
+      });
+    }
+    
+    // Otherwise use the existing filtering logic
+    return selectedSystemCategory === "All" 
+      ? projects 
+      : projects.filter((project) => project.systemCategory === selectedSystemCategory);
+  }, [projects, selectedSystemCategory, selectedUserCategory]);
 
   // Get projects to display based on selected categories
-  const getDisplayProjects = () => {
-    if (selectedUserCategory) {
-      // Get projects from the selected user category
-      const categoryProjects = userCategoryProjects[selectedUserCategory] || []
+  // const getDisplayProjects = () => {
+  //   if (selectedUserCategory) {
+  //     // Get projects from the selected user category
+  //     const categoryProjects = userCategoryProjects[selectedUserCategory] || []
 
-      // If a system category is also selected, filter by that too
-      if (selectedSystemCategory) {
-        return categoryProjects.filter((project) => project.systemCategory === selectedSystemCategory)
-      }
+  //     // If a system category is also selected, filter by that too
+  //     if (selectedSystemCategory) {
+  //       return categoryProjects.filter((project) => project.systemCategory === selectedSystemCategory)
+  //     }
 
-      return categoryProjects
-    } else if (selectedSystemCategory) {
-      // Get all projects with the selected system category
+  //     return categoryProjects
+  //   } else if (selectedSystemCategory) {
+  //     // Get all projects with the selected system category
 
-      // From general projects
-      const generalProjects = projects.filter((project) => project.systemCategory === selectedSystemCategory)
+  //     // From general projects
+  //     const generalProjects = projects.filter((project) => project.systemCategory === selectedSystemCategory)
 
-      // From all user categories
-      const userProjects = Object.values(userCategoryProjects)
-        .flat()
-        .filter((project) => project.systemCategory === selectedSystemCategory)
+  //     // From all user categories
+  //     const userProjects = Object.values(userCategoryProjects)
+  //       .flat()
+  //       .filter((project) => project.systemCategory === selectedSystemCategory)
 
-      return [...generalProjects, ...userProjects]
-    }
+  //     return [...generalProjects, ...userProjects]
+  //   }
 
-    // If no categories selected, return all projects EXCEPT completed ones
-    const allProjects = [
-      ...projects.filter((project) => !project.completed),
-      ...Object.values(userCategoryProjects)
-        .flat()
-        .filter((project) => !project.completed),
-    ]
+  //   // If no categories selected, return all projects EXCEPT completed ones
+  //   const allProjects = [
+  //     ...projects.filter((project) => !project.completed),
+  //     ...Object.values(userCategoryProjects)
+  //       .flat()
+  //       .filter((project) => !project.completed),
+  //   ]
 
-    return allProjects
-  }
+  //   return allProjects
+  // }
 
   // Get all projects for calendar view (no filtering)
   const getAllProjects = () => {
     return [...projects, ...Object.values(userCategoryProjects).flat()]
   }
 
-  const displayProjects = getDisplayProjects()
+  // const displayProjects = getDisplayProjects()
 
   // Static images for difficulty levels
   const getDifficultyIcon = (difficulty) => {
@@ -700,76 +717,122 @@ export default function HomePage() {
   }
 
   // Add this function to handle editing a project
-  const initiateEditProject = (project) => {
-    setProjectToEdit(project)
-    setShowEditProjectModal(true)
+  const initiateEditProject = (id) => {
+    const project = projects.find(p => p.id === id);
+    if (project) {
+      setProjectToEdit(project);
+      setShowEditProjectModal(true);
+    } else {
+      console.error("Project not found:", id);
+    }
   }
+    // Function to confirm project completion and move to Completed
+// Replace the existing confirmEdit function with this version
+  const confirmEdit = () => {
+    if (!projectToEdit) return;
+    
+    // Update the local state - projectToEdit is already the full project object
+    setProjects(
+      projects.map((project) =>
+        project.id === projectToEdit.id // Compare IDs here
+          ? { 
+              ...project, 
+              name: projectToEdit.name, 
+              dueDate: projectToEdit.dueDate, 
+              difficulty: projectToEdit.difficulty,
+              timeLeft: calculateTimeLeft(projectToEdit.dueDate),
+              systemCategory: determineSystemCategory(projectToEdit.dueDate)
+            }
+          : project
+      )
+    );
+
+    // Update the project in Firestore
+    modifyProjectInFirestore({
+      userId: user.uid,
+      projectId: projectToEdit.id.toString(), // Use projectToEdit.id here
+      updatedData: { 
+        name: projectToEdit.name, 
+        dueDate: projectToEdit.dueDate, 
+        difficulty: projectToEdit.difficulty
+      },
+      onSuccess: () => {
+        console.log("Project edited and updated in Firestore!");
+        // Close the modal after successful update
+        setShowEditProjectModal(false);
+        setProjectToEdit(null);
+      },
+      onError: (error) => {
+        console.error("Error updating project in Firestore:", error);
+      },
+    });
+  };
 
   // Add this function to save edited project
-  const saveEditedProject = () => {
-    if (!projectToEdit) return
+  // const saveEditedProject = () => {
+  //   if (!projectToEdit) return
 
-    // Preserve the system category if it's "Completed", otherwise recalculate
-    const systemCategory =
-      projectToEdit.systemCategory === "Completed" ? "Completed" : determineSystemCategory(projectToEdit.dueDate)
+  //   // Preserve the system category if it's "Completed", otherwise recalculate
+  //   const systemCategory =
+  //     projectToEdit.systemCategory === "Completed" ? "Completed" : determineSystemCategory(projectToEdit.dueDate)
 
-    // Recalculate time left
-    const timeLeft = calculateTimeLeft(projectToEdit.dueDate)
+  //   // Recalculate time left
+  //   const timeLeft = calculateTimeLeft(projectToEdit.dueDate)
 
-    const updatedProject = {
-      ...projectToEdit,
-      timeLeft,
-      systemCategory,
-      alert: timeLeft === "Today" && systemCategory !== "Completed",
-    }
+  //   const updatedProject = {
+  //     ...projectToEdit,
+  //     timeLeft,
+  //     systemCategory,
+  //     alert: timeLeft === "Today" && systemCategory !== "Completed",
+  //   }
 
-    // First, find and remove the project from its original location
-    let originalCategory = null
-    let found = false
+  //   // First, find and remove the project from its original location
+  //   let originalCategory = null
+  //   let found = false
 
-    // Check if it's in the general projects
-    const updatedProjects = projects.filter((p) => {
-      if (p.id === updatedProject.id) {
-        found = true
-        return false // Remove it
-      }
-      return true
-    })
+  //   // Check if it's in the general projects
+  //   const updatedProjects = projects.filter((p) => {
+  //     if (p.id === updatedProject.id) {
+  //       found = true
+  //       return false // Remove it
+  //     }
+  //     return true
+  //   })
 
-    if (found) {
-      setProjects(updatedProjects)
-    } else {
-      // Check in user categories
-      for (const categoryId in userCategoryProjects) {
-        if (userCategoryProjects[categoryId].some((p) => p.id === updatedProject.id)) {
-          originalCategory = categoryId
-          break
-        }
-      }
+  //   if (found) {
+  //     setProjects(updatedProjects)
+  //   } else {
+  //     // Check in user categories
+  //     for (const categoryId in userCategoryProjects) {
+  //       if (userCategoryProjects[categoryId].some((p) => p.id === updatedProject.id)) {
+  //         originalCategory = categoryId
+  //         break
+  //       }
+  //     }
 
-      if (originalCategory) {
-        setUserCategoryProjects((prev) => ({
-          ...prev,
-          [originalCategory]: prev[originalCategory].filter((p) => p.id !== updatedProject.id),
-        }))
-      }
-    }
+  //     if (originalCategory) {
+  //       setUserCategoryProjects((prev) => ({
+  //         ...prev,
+  //         [originalCategory]: prev[originalCategory].filter((p) => p.id !== updatedProject.id),
+  //       }))
+  //     }
+  //   }
 
-    // Then add the project to its new location
-    if (updatedProject.userCategory) {
-      // Add to user category
-      setUserCategoryProjects((prev) => ({
-        ...prev,
-        [updatedProject.userCategory]: [...(prev[updatedProject.userCategory] || []), updatedProject],
-      }))
-    } else {
-      // Add to general projects
-      setProjects((prev) => [...prev, updatedProject])
-    }
+  //   // Then add the project to its new location
+  //   if (updatedProject.userCategory) {
+  //     // Add to user category
+  //     setUserCategoryProjects((prev) => ({
+  //       ...prev,
+  //       [updatedProject.userCategory]: [...(prev[updatedProject.userCategory] || []), updatedProject],
+  //     }))
+  //   } else {
+  //     // Add to general projects
+  //     setProjects((prev) => [...prev, updatedProject])
+  //   }
 
-    setShowEditProjectModal(false)
-    setProjectToEdit(null)
-  }
+    // setShowEditProjectModal(false)
+    // setProjectToEdit(null)
+  // }
 
   // Add this function to handle editing a category
   const initiateEditCategory = (category) => {
@@ -972,12 +1035,12 @@ export default function HomePage() {
   
                 return (
                   <div
-                    key={project.id}
-                    className={`text-lg p-1 rounded truncate font-passion-one ${bgColor} ${textColor}`}
-                    title={project.name}
-                  >
-                    {project.name}
-                  </div>
+                  key={project.id}
+                  className={`text-lg p-1 rounded truncate font-passion-one ${bgColor} ${textColor} ${project.completed ? "line-through" : ""}`}
+                  title={project.name}
+                >
+                  {project.name}
+                </div>
                 )
               })}
             </div>
@@ -994,12 +1057,12 @@ export default function HomePage() {
               </h2>
               {monthIcons[monthNames[month]]}
             </div>
-            <div className="flex space-x-2 mt-6">
-              <button onClick={prevMonth} className="p-2 rounded-md hover:bg-[#ffece3] text-[#FF8C6B]">
-                <ChevronLeft size={20} />
+            <div className="flex space-x-2 mt-0">
+              <button onClick={prevMonth} className="p-2 rounded-md hover:bg-[#f5e5b5] text-[#FF8C6B]">
+                <ChevronLeft size={28} />
               </button>
-              <button onClick={nextMonth} className="p-2 rounded-md hover:bg-[#ffece3] text-[#FF8C6B]">
-                <ChevronRight size={20} />
+              <button onClick={nextMonth} className="p-2 rounded-md hover:bg-[#f5e5b5] text-[#FF8C6B]">
+                <ChevronRight size={28} />
               </button>
             </div>
           </div>
@@ -1047,7 +1110,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-[#f8eece] relative overflow-x-hidden [&_button]:cursor-pointer">
       {/* Fetch projects from Firestore */}
       <FetchProjectsFromFirestore
-        userId = { userId }
+        userId = { user.uid }
         onProjectsFetched={(fetchedProjects) => setProjects(fetchedProjects)}
       />
       {/* Sidebar Menu */}
@@ -1547,17 +1610,17 @@ export default function HomePage() {
               </div>
 
               {/* Project Rows */}
-              {displayProjects.length > 0 ? (
-                displayProjects.map((project) => (
+              {filteredProjects.length > 0 ? (
+                filteredProjects.map((project) => (
                   <div
                     key={project.id}
-                    className="grid grid-cols-12 gap-4 px-6 py-3 border-b border-[#e6d6a6] hover:bg-[#f5e5b5] mb-1 rounded-md"
+                    className="grid grid-cols-12 gap-4 px-6 py-4 border-b border-gray-200 hover:bg-[#f5e5b5] mb-1"
                   >
                     <div className="col-span-1 flex items-center">
                       <input
                         type="checkbox"
                         checked={project.completed}
-                        onChange={() => handleCheckboxClick(project)}
+                        onChange={() => initiateCompletion(project.id)}
                         className="h-5 w-5 text-[#FF8C6B] rounded border-gray-300 focus:ring-[#FF8C6B] cursor-pointer"
                       />
                     </div>
@@ -1598,7 +1661,7 @@ export default function HomePage() {
                     <div className="col-span-2 flex items-center text-xl oleo-script-regular">{getDifficultyIcon(project.difficulty)}</div>
                     <div className="col-span-1 flex items-center justify-end space-x-2 ">
                       <button
-                        onClick={() => initiateEditProject(project)}
+                        onClick={() => initiateEditProject(project.id)}
                         className="text-gray-400 hover:text-[#FF8C6B] focus:outline-none"
                         title="Edit project"
                       >
@@ -1662,7 +1725,6 @@ export default function HomePage() {
                         />
                       </svg>
                     </div>
-
                     {selectedSystemCategory === "Completed" ? (
                       <>
                         <h3 className="text-xl font-medium text-[#FF8C6B] mb-2 font-nova-square-regular">
@@ -1997,7 +2059,7 @@ export default function HomePage() {
                         value={projectToEdit.userCategory || ""}
                         onChange={(e) => {
                           const newCategoryId = e.target.value || null
-                          setProjectToEdit({ ...projectToEdit, userCategory: newCategoryId })
+                          setProjectToEdit({ ...projectToEdit, category: newCategoryId })
                         }}
                       >
                         <option value="">No specific category</option>
@@ -2024,7 +2086,7 @@ export default function HomePage() {
                 Cancel
               </button>
               <button
-                onClick={saveEditedProject}
+                onClick={confirmEdit}
                 className="bg-[#FF8C6B] hover:bg-[#ff7a55] text-white px-4 py-2 rounded-md font-medium font-abril-fatface"
               >
                 Save Changes

@@ -27,29 +27,29 @@ export default function FetchProjectsFromFirestore({ userId, onProjectsFetched }
             const alert = timeLeft === "Today"; // Set alert to true if timeLeft is "Today"
 
             // Determine the category based on timeLeft and archived
-            let category = project.category; // Default category
-            if (project.category !== "Archived") {
-              if (timeLeft === "Today" || timeLeft === "Tomorrow") {
-                category = "Urgent";
-              } else if (timeLeft.includes("days left") || timeLeft === "1 week left") {
-                category = "Upcoming";
+            let systemCategory = project.systemCategory; // Default category
+            if (project.systemCategory !== "Completed") {
+              if (timeLeft === "Today" || timeLeft === "Tomorrow" || timeLeft.includes("days left")) {
+                systemCategory = "Urgent";
+              } else if (timeLeft === "1 week left" || timeLeft.includes("weeks left") ) {
+                systemCategory = "Upcoming";
               } else {
-                category = "Trivial";
-              }
+                systemCategory = "Trivial";
+              } 
             }
 
             // Update Firestore if the category or alert has changed
-            if (project.category !== category || project.alert !== alert) {
+            if (project.systemCategory !== systemCategory || project.alert !== alert) {
               await modifyProjectInFirestore({
                 userId,
                 projectId: project.id.toString(),
-                updatedData: { category, alert },
+                updatedData: { systemCategory, alert },
                 onSuccess: () => console.log(`Project ${project.id} updated successfully!`),
                 onError: (error) => console.error(`Error updating project ${project.id}:`, error),
               });
             }
 
-            return { ...project, timeLeft, category, alert }; // Add timeLeft, category, and alert to the project object
+            return { ...project, timeLeft, systemCategory, alert }; // Add timeLeft, category, and alert to the project object
           })
         );
 
