@@ -40,7 +40,7 @@ const sendDailyEmails = async () => {
 
       // Fetch "Urgent" projects for the user
       const projectsRef = db.collection(`projects/${userDoc.id}/userProjects`);
-      const urgentProjectsSnapshot = await projectsRef.where('category', '==', 'Urgent').get();
+      const urgentProjectsSnapshot = await projectsRef.where('systemCategory', '==', 'Urgent').get();
 
       if (urgentProjectsSnapshot.empty) continue; // Skip if no "Urgent" projects
 

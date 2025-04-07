@@ -31,7 +31,7 @@ const sendWeeklyEmails = async () => {
       // Fetch "Archived" projects completed within the last week
       const projectsRef = db.collection(`projects/${userDoc.id}/userProjects`);
       const archivedProjectsSnapshot = await projectsRef
-        .where('category', '==', 'Archived')
+        .where('systemCategory', '==', 'Archived')
         .get();
 
       const oneWeekAgo = new Date();
