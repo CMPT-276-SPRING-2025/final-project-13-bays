@@ -5,7 +5,7 @@ import { db } from "../firebase-config.js"; // Ensure Firestore is initialized i
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-export default async function uploadProjectToFirestore({ userId, userName, projectData, onSuccess = () => {}, onError = () => {},}) {
+export default async function uploadProjectToFirestore({ userId, userName, userMail, projectData, onSuccess = () => {}, onError = () => {},}) {
   try {
     if (!userId) {
       throw new Error("User ID is missing. Please log in.");
@@ -21,7 +21,8 @@ export default async function uploadProjectToFirestore({ userId, userName, proje
       ...projectData,
     };
     const dataToUpload2 = {
-        userName, 
+        userName,
+        userMail, 
       };
 
     // Save the data to Firestore

@@ -16,14 +16,6 @@ import deleteProjectFromFirestore from "./DeleteProject";
 import modifyProjectInFirestore from "./ModifyProject";
 
 // helper function for name reformat
-function formatFullName(name) {
-  if (!name) {
-      return ""
-  } else {
-      return name.split(" ").map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(" ")
-  } // splits all the diff names i.e first, middle, last, then formats them and joins back together
-}
-
 function formatDisplayName(name) {
   if (!name) {
       return ""
@@ -58,6 +50,7 @@ export default function HomePage() {
 
   const userId = auth.currentUser?.uid
   const userName = auth.currentUser?.displayName
+  const userMail = auth.currentUser?.email
     
   // const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
   //   if (currentUser) {
@@ -400,27 +393,29 @@ export default function HomePage() {
   // Function to confirm project completion and move to Completed
   const confirmCompletion = () => {
     if (projectToComplete !== null) {
+      const currentDate = new Date().toISOString().split("T")[0] // Get the current date in YYYY-MM-DD format
+  
       // Update the local state
       setProjects(
         projects.map((project) =>
           project.id === projectToComplete
-            ? { ...project, category: "Completed", completed: true }
+            ? { ...project, systemCategory: "Completed", completed: true, completionDate: currentDate }
             : project
         )
-      );
+      )
   
       // Update the project in Firestore
       modifyProjectInFirestore({
         userId: user.uid,
         projectId: projectToComplete.toString(),
-        updatedData: { systemCategory: "Completed", completed: true },
+        updatedData: { systemCategory: "Completed", completed: true, completionDate: currentDate },
         onSuccess: () => {
           console.log("Project marked as completed and updated in Firestore!");
         },
         onError: (error) => {
           console.error("Error updating project completion in Firestore:", error);
         },
-      });
+      })
   
       // Close the confirmation modal
       setShowCompletionConfirm(false);
@@ -480,8 +475,9 @@ export default function HomePage() {
   
     // Call the Firebase upload function
     uploadProjectToFirestore({
-      userId: user.uid,
-      userName: user.displayName,
+      userId,
+      userName,
+      userMail,
       projectData,
       onSuccess: () => {
         console.log("Project uploaded successfully!");
