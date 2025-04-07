@@ -10,6 +10,10 @@ import { handleProfilePictureUpload, uploadProfilePicture } from "../utils/profi
 import {Trash2, Menu, PlusCircle, AlertTriangle, X, Calendar, Clock,
   Check, Plus, Briefcase, User, Book, Search, Heart, Leaf, Eye, EyeClosed , ChevronLeft, ChevronRight, Flower, Sun, Snowflake, DoorClosed, DoorOpen, } from "lucide-react"
 import "../styles/globalfonts.css"
+import uploadProjectToFirestore from "./UploadProject"
+import FetchProjectsFromFirestore from "./FetchProjects";
+import deleteProjectFromFirestore from "./DeleteProject";
+import modifyProjectInFirestore from "./ModifyProject";
 
 // helper function for name reformat
 function formatFullName(name) {
@@ -45,6 +49,8 @@ export default function HomePage() {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
+        const userId = auth.currentUser?.uid
+        const userName = auth.currentUser?.displayName
       } else {
         setUser(null)
         navigate("/sign-up"); // Move navigate() inside useEffect
@@ -282,30 +288,45 @@ export default function HomePage() {
     setShowDeleteConfirm(true)
   }
 
+  // fujai confirm Delete
+  // if (selectedUserCategory) {
+  //   // Delete from user category projects
+  //   setUserCategoryProjects((prev) => ({
+  //     ...prev,
+  //     [selectedUserCategory]: prev[selectedUserCategory].filter((project) => project.id !== projectToDelete),
+  //   }))
+  // } else {
+  //   // Delete from all projects regardless of completion status
+  //   setProjects(projects.filter((project) => project.id !== projectToDelete))
+
+  //   // Also check and delete from user categories if it's a completed project being viewed in "Completed" section
+  //   if (selectedSystemCategory === "Completed") {
+  //     Object.keys(userCategoryProjects).forEach((categoryId) => {
+  //       setUserCategoryProjects((prev) => ({
+  //         ...prev,
+  //         [categoryId]: prev[categoryId].filter((project) => project.id !== projectToDelete),
+  //       }))
+  //     })
+  //   }
+  // }
+  // setShowDeleteConfirm(false)
+  // setProjectToDelete(null)
+
   const confirmDelete = () => {
     if (projectToDelete !== null) {
-      if (selectedUserCategory) {
-        // Delete from user category projects
-        setUserCategoryProjects((prev) => ({
-          ...prev,
-          [selectedUserCategory]: prev[selectedUserCategory].filter((project) => project.id !== projectToDelete),
-        }))
-      } else {
-        // Delete from all projects regardless of completion status
-        setProjects(projects.filter((project) => project.id !== projectToDelete))
-
-        // Also check and delete from user categories if it's a completed project being viewed in "Completed" section
-        if (selectedSystemCategory === "Completed") {
-          Object.keys(userCategoryProjects).forEach((categoryId) => {
-            setUserCategoryProjects((prev) => ({
-              ...prev,
-              [categoryId]: prev[categoryId].filter((project) => project.id !== projectToDelete),
-            }))
-          })
-        }
-      }
-      setShowDeleteConfirm(false)
-      setProjectToDelete(null)
+      deleteProjectFromFirestore({
+        userId,
+        projectId: projectToDelete.toString(),
+        onSuccess: () => {
+          // Remove the project from local state
+          setProjects(projects.filter((project) => project.id !== projectToDelete));
+          setShowDeleteConfirm(false);
+          setProjectToDelete(null);
+        },
+        onError: (error) => {
+          console.error("Error deleting project:", error);
+        },
+      })
     }
   }
 
@@ -379,154 +400,97 @@ export default function HomePage() {
   // Function to confirm project completion and move to Completed
   const confirmCompletion = () => {
     if (projectToComplete !== null) {
-      // Find the project to complete
-      let projectFound = false
-      let projectLocation = null
-
-      // First check if it's in general projects
-      const updatedProjects = projects.map((project) => {
-        if (project.id === projectToComplete) {
-          projectFound = true
-          return { ...project, completed: true, systemCategory: "Completed" }
-        }
-        return project
-      })
-
-      if (projectFound) {
-        setProjects(updatedProjects)
-      } else {
-        // Check in user categories
-        for (const categoryId in userCategoryProjects) {
-          const categoryProjects = userCategoryProjects[categoryId]
-          if (categoryProjects.some((p) => p.id === projectToComplete)) {
-            projectLocation = categoryId
-            setUserCategoryProjects((prev) => ({
-              ...prev,
-              [categoryId]: prev[categoryId].map((project) =>
-                project.id === projectToComplete
-                  ? { ...project, completed: true, systemCategory: "Completed" }
-                  : project,
-              ),
-            }))
-            break
-          }
-        }
-      }
-
-      setShowCompletionConfirm(false)
-      setProjectToComplete(null)
-    }
-  }
-
-  // Function to handle checkbox click for completed projects
-  const handleCheckboxClick = (project) => {
-    if (project.completed) {
-      // If project is already completed, ask to unarchive
-      setProjectToUnarchive(project.id)
-      setShowUnarchiveConfirm(true)
-    } else {
-      // If project is not completed, initiate completion
-      initiateCompletion(project.id)
-    }
-  }
-
-  // Function to unarchive a project
-  const confirmUnarchive = () => {
-    if (projectToUnarchive !== null) {
-      // Find the project to unarchive
-      let projectFound = false
-
-      // First check if it's in general projects
-      const updatedProjects = projects.map((project) => {
-        if (project.id === projectToUnarchive) {
-          projectFound = true
-          const systemCategory = determineSystemCategory(project.dueDate)
-          return { ...project, completed: false, systemCategory }
-        }
-        return project
-      })
-
-      if (projectFound) {
-        setProjects(updatedProjects)
-      } else {
-        // Check in user categories
-        for (const categoryId in userCategoryProjects) {
-          const categoryProjects = userCategoryProjects[categoryId]
-          if (categoryProjects.some((p) => p.id === projectToUnarchive)) {
-            setUserCategoryProjects((prev) => ({
-              ...prev,
-              [categoryId]: prev[categoryId].map((project) => {
-                if (project.id === projectToUnarchive) {
-                  const systemCategory = determineSystemCategory(project.dueDate)
-                  return { ...project, completed: false, systemCategory }
-                }
-                return project
-              }),
-            }))
-            break
-          }
-        }
-      }
-
-      setShowUnarchiveConfirm(false)
-      setProjectToUnarchive(null)
+      // Update the local state
+      setProjects(
+        projects.map((project) =>
+          project.id === projectToComplete
+            ? { ...project, category: "Archived", completed: true }
+            : project
+        )
+      );
+  
+      // Update the project in Firestore
+      modifyProjectInFirestore({
+        userId,
+        projectId: projectToComplete.toString(),
+        updatedData: { category: "Archived", completed: true },
+        onSuccess: () => {
+          console.log("Project marked as completed and updated in Firestore!");
+        },
+        onError: (error) => {
+          console.error("Error updating project completion in Firestore:", error);
+        },
+      });
+  
+      // Close the confirmation modal
+      setShowCompletionConfirm(false);
+      setProjectToComplete(null);
     }
   }
 
   // Function to update project progress
   const updateProgress = (id, newProgress) => {
-    if (selectedUserCategory) {
-      // Update progress in user category projects
-      setUserCategoryProjects((prev) => ({
-        ...prev,
-        [selectedUserCategory]: prev[selectedUserCategory].map((project) =>
-          project.id === id ? { ...project, progress: newProgress } : project,
-        ),
-      }))
-    } else {
-      // Update progress in system category projects
-      setProjects(projects.map((project) => (project.id === id ? { ...project, progress: newProgress } : project)))
+    // Update the local state
+    setProjects(
+      projects.map((project) =>
+        project.id === id ? { ...project, progress: newProgress } : project
+      )
+    );
+  
+    // Update the project in Firestore
+    modifyProjectInFirestore({
+      userId,
+      projectId: id.toString(),
+      updatedData: { progress: newProgress },
+      onSuccess: () => {
+        console.log("Progress updated successfully in Firestore!");
+      },
+      onError: (error) => {
+        console.error("Error updating progress in Firestore:", error);
+      },
+    });
+  };
+
+   // Function to add a new project - to the currently selected category
+   const addNewProject = () => {
+    if (newProject.name.trim() === "") {
+      toast.error("Project name cannot be empty!");
+      return;
     }
-  }
-
-  // Function to add a new project
-  const addNewProject = () => {
-    if (newProject.name.trim() === "") return
-
-    const newId = Date.now()
-    const timeLeft = calculateTimeLeft(newProject.dueDate)
-    const systemCategory = determineSystemCategory(newProject.dueDate)
-
-    const newProjectItem = {
+  
+    if (!userId) {
+      toast.error("User ID is missing. Please log in.");
+      return;
+    }
+  
+    const newId = Math.max(...projects.map((p) => p.id), 0) + 1;
+  
+    const projectData = {
       id: newId,
       name: newProject.name,
       progress: 0,
-      timeLeft: timeLeft,
+      dueDate: newProject.dueDate,
       difficulty: newProject.difficulty,
-      alert: timeLeft === "Today",
+      category: selectedCategory, // Use the currently selected category
       completed: false,
-      systemCategory: systemCategory,
-      userCategory: newProject.category || selectedUserCategory || null,
-      dueDate: newProject.dueDate, // Store the due date for future recategorization
-    }
-
-    if (selectedUserCategory) {
-      // Add to user category projects
-      setUserCategoryProjects((prev) => ({
-        ...prev,
-        [selectedUserCategory]: [...(prev[selectedUserCategory] || []), newProjectItem],
-      }))
-    } else if (newProject.category) {
-      // Add to selected user category from dropdown
-      setUserCategoryProjects((prev) => ({
-        ...prev,
-        [newProject.category]: [...(prev[newProject.category] || []), newProjectItem],
-      }))
-    } else {
-      // Add to general projects
-      setProjects([...projects, newProjectItem])
-    }
-
+    };
+  
+    // Add the project to the local state
+    setProjects([...projects, { ...projectData, timeLeft: calculateTimeLeft(newProject.dueDate) }]);
+  
+    // Call the Firebase upload function
+    uploadProjectToFirestore({
+      userId,
+      userName,
+      projectData,
+      onSuccess: () => {
+        console.log("Project uploaded successfully!");
+      },
+      onError: (error) => {
+        console.error("Error uploading project:", error);
+      },
+    });
+  
     // Reset form and close modal
     setNewProject({
       name: "",
@@ -555,18 +519,6 @@ export default function HomePage() {
     if (diffDays < 14) return "1 week left"
     if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks left`
     return `${Math.floor(diffDays / 30)} months left`
-  }
-
-  // Helper function to check if due date is today
-  const isDueToday = (dueDate) => {
-    if (!dueDate) return false
-
-    const due = new Date(dueDate)
-    const now = new Date()
-
-    return (
-      due.getDate() === now.getDate() && due.getMonth() === now.getMonth() && due.getFullYear() === now.getFullYear()
-    )
   }
 
   // Helper function to get days difference
@@ -1093,6 +1045,11 @@ export default function HomePage() {
   } else {
   return (
     <div className="min-h-screen bg-[#f8eece] relative overflow-x-hidden [&_button]:cursor-pointer">
+      {/* Fetch projects from Firestore */}
+      <FetchProjectsFromFirestore
+        userId = { userId }
+        onProjectsFetched={(fetchedProjects) => setProjects(fetchedProjects)}
+      />
       {/* Sidebar Menu */}
       <div
         ref={sidebarRef}
