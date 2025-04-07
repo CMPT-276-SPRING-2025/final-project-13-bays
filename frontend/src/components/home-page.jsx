@@ -8,7 +8,7 @@ import { ToastContainer, toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import { handleProfilePictureUpload, uploadProfilePicture } from "../utils/profilePictureUtils.js"
 import {Trash2, Menu, PlusCircle, AlertTriangle, X, Calendar, Clock,
-  Check, Plus, Briefcase, User, Book, Search, Heart,} from "lucide-react"
+  Check, Plus, Briefcase, User, Book, Search, Heart, Leaf, Eye, EyeClosed , ChevronLeft, ChevronRight, Flower, Sun, Snowflake, DoorClosed, DoorOpen, } from "lucide-react"
 import "../styles/globalfonts.css"
 
 // helper function for name reformat
@@ -52,6 +52,7 @@ export default function HomePage() {
       setLoading(false)
     })},[navigate]);
 
+    
   // const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
   //   if (currentUser) {
   //     setUser(currentUser)
@@ -294,7 +295,7 @@ export default function HomePage() {
         setProjects(projects.filter((project) => project.id !== projectToDelete))
 
         // Also check and delete from user categories if it's a completed project being viewed in "Completed" section
-        if (selectedSystemCategory === "Archived") {
+        if (selectedSystemCategory === "Completed") {
           Object.keys(userCategoryProjects).forEach((categoryId) => {
             setUserCategoryProjects((prev) => ({
               ...prev,
@@ -308,7 +309,12 @@ export default function HomePage() {
     }
   }
 
-  const uploadHelper = async () => {
+  const uploadHelper = async (e) => {
+    if (e && e.target && e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      handleProfilePictureUpload(file, setProfilePicture); // Update the state with the selected file
+    }
+    
     if (!profilePicture) {
       toast.error("Please select a profile picture before saving.", {
         position: "top-center",
@@ -370,7 +376,7 @@ export default function HomePage() {
     setShowCompletionConfirm(true)
   }
 
-  // Function to confirm project completion and move to Archived
+  // Function to confirm project completion and move to Completed
   const confirmCompletion = () => {
     if (projectToComplete !== null) {
       // Find the project to complete
@@ -381,7 +387,7 @@ export default function HomePage() {
       const updatedProjects = projects.map((project) => {
         if (project.id === projectToComplete) {
           projectFound = true
-          return { ...project, completed: true, systemCategory: "Archived" }
+          return { ...project, completed: true, systemCategory: "Completed" }
         }
         return project
       })
@@ -398,7 +404,7 @@ export default function HomePage() {
               ...prev,
               [categoryId]: prev[categoryId].map((project) =>
                 project.id === projectToComplete
-                  ? { ...project, completed: true, systemCategory: "Archived" }
+                  ? { ...project, completed: true, systemCategory: "Completed" }
                   : project,
               ),
             }))
@@ -532,6 +538,8 @@ export default function HomePage() {
     setShowNewProjectModal(false)
   }
 
+  // console.log("Selected System Category:", selectedSystemCategory);
+
   // Helper function to calculate time left text
   const calculateTimeLeft = (dueDate) => {
     if (!dueDate) return ""
@@ -656,15 +664,12 @@ export default function HomePage() {
       case "Easy":
         return (
           <div className="flex items-center">
-            {/* Running stick figure static image */}
-            <div className="mr-3 relative w-8 h-8">
-              <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="7" r="3" fill="currentColor" />
-                <line x1="12" y1="10" x2="12" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                <line x1="12" y1="18" x2="8" y2="24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                <line x1="12" y1="18" x2="18" y2="22" stroke="currentColor" strokeLinecap="round" />
-                <line x1="7" y1="14" x2="17" y2="14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
+            <div className="mr-3 relative w-10 h-10 flex items-center justify-center">
+              <img 
+                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/output-onlinegiftools-zVXDeNPuWheOjfSfHgpv3R96ceiRG8.gif" 
+                alt="Running figure - Easy difficulty" 
+                className="w-10 h-10 object-contain"
+              />
             </div>
             <span className="text-base text-gray-500">Easy</span>
           </div>
@@ -672,16 +677,12 @@ export default function HomePage() {
       case "Medium":
         return (
           <div className="flex items-center">
-            {/* Person climbing hill static image */}
-            <div className="mr-3 relative w-8 h-8">
-              <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M6 26L26 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                <circle cx="18" cy="14" r="3" fill="currentColor" />
-                <line x1="18" y1="17" x2="18" y2="22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                <line x1="18" y1="22" x2="15" y2="26" stroke="currentColor" strokeLinecap="round" />
-                <line x1="18" y1="22" x2="21" y2="26" stroke="currentColor" strokeLinecap="round" />
-                <line x1="14" y1="19" x2="22" y2="19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
+            <div className="mr-3 relative w-10 h-10 flex items-center justify-center">
+              <img 
+                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/climbingFix-TXH4C1kG5ydMgrc8LZALJ2JrQwfngh.gif" 
+                alt="Climbing figure - Medium difficulty" 
+                className="w-10 h-10 object-contain"
+              />
             </div>
             <span className="text-base text-gray-500">Medium</span>
           </div>
@@ -689,17 +690,12 @@ export default function HomePage() {
       case "Hard":
         return (
           <div className="flex items-center">
-            {/* Drowning person static image */}
-            <div className="mr-3 relative w-8 h-8">
-              <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M4 24H28" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" />
-                <path d="M8 22H24" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" />
-                <circle cx="16" cy="18" r="3" fill="currentColor" />
-                <line x1="16" y1="21" x2="16" y2="26" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                <line x1="12" y1="16" x2="20" y2="16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                <line x1="13" y1="26" x2="16" y2="21" stroke="currentColor" strokeLinecap="round" />
-                <line x1="19" y1="26" x2="16" y2="21" stroke="currentColor" strokeLinecap="round" />
-              </svg>
+            <div className="mr-3 relative w-10 h-10 flex items-center justify-center">
+              <img 
+                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/drowningFix-eiWzjCgLQJkbPA60x0JrFS9FVguKWh.gif" 
+                alt="Drowning hand - Hard difficulty" 
+                className="w-10 h-10 object-contain"
+              />
             </div>
             <span className="text-base text-gray-500">Hard</span>
           </div>
@@ -714,198 +710,9 @@ export default function HomePage() {
     { id: "Urgent", name: "Urgent", color: "bg-red-500" },
     { id: "Upcoming", name: "Upcoming", color: "bg-orange-500" },
     { id: "Trivial", name: "Trivial", color: "bg-yellow-500" },
-    { id: "Archived", name: "Completed", color: "bg-green-500" },
+    { id: "Completed", name: "Completed", color: "bg-green-500" },
   ]
 
-  // if (loading || !user) {
-  //   return (
-  //     <div className="flex items-center justify-center min-h-screen">
-  //       <p className="font-jomhuria text-4xl text-gray-500">
-  //         {loading ? "Loading..." : "Redirecting..."}
-  //       </p>
-  //     </div>
-  //   );
-  // } else {
-  //   return (
-  //     <div className="min-h-screen bg-white">
-  //       {/* Header/Navigation */}
-  //       <header className="bg-white shadow-sm">
-  //         <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 py-5 flex justify-between items-center">
-  //           <div className="flex items-center">
-  //             <button className="p-2 rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none">
-  //               <Menu size={28} />
-  //             </button>
-  //             <div className="ml-4 w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-  //               <span className="text-xl text-gray-600 font-lobster">?</span>
-  //             </div>
-  //           </div>
-
-  //           {/* Center view toggle buttons */}
-  //           <div className="flex items-center space-x-4">
-  //             <button
-  //               onClick={() => setViewMode("list")}
-  //               className={`border-2 p-2 rounded ${viewMode === "list" ? "border-black bg-gray-100" : "border-gray-300"}`}
-  //             >
-  //               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-  //                 <path
-  //                   d="M4 6H20M4 12H20M4 18H11"
-  //                   stroke="black"
-  //                   strokeWidth="2"
-  //                   strokeLinecap="round"
-  //                   strokeLinejoin="round"
-  //                 />
-  //               </svg>
-  //             </button>
-
-  //             <button
-  //               onClick={() => setViewMode("calendar")}
-  //               className={`border-2 p-2 rounded ${viewMode === "calendar" ? "border-black bg-gray-100" : "border-gray-300"}`}
-  //             >
-  //               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-  //                 <rect
-  //                   x="3"
-  //                   y="4"
-  //                   width="18"
-  //                   height="18"
-  //                   rx="2"
-  //                   stroke="currentColor"
-  //                   strokeWidth="2"
-  //                   strokeLinecap="round"
-  //                   strokeLinejoin="round"
-  //                 />
-  //                 <path d="M16 2V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  //                 <path d="M8 2V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  //                 <path d="M3 10H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  //               </svg>
-  //             </button>
-  //           </div>
-
-  //           <div className="flex flex-col items-center">
-              
-  //             {user ? (
-  //                 <span className="font-chela-one-regular text-lg mt-8">{formatDisplayName(user.displayName)}</span>
-  //               ) : (
-  //                 <span className="font-chela-one-regular text-lg mt-8">Loading...</span>
-  //             )}
-
-  //             {user && user.photoURL ? (
-  //               <img
-  //                 src={user.photoURL || "/placeholder.svg"}
-  //                 alt={`${user.displayName}'s profile`}
-  //                 className="w-16 h-16 rounded-full mt-1"
-  //               />
-  //             ) : (
-  //               <div className="w-16 h-16 mt-1 rounded-full flex items-center justify-center bg-gray-200">
-  //                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" onClick={() => document.getElementById("profilePictureInput").click()} className="cursor-pointer">
-  //                   <circle
-  //                     cx="12"
-  //                     cy="8"
-  //                     r="5"
-  //                     stroke="currentColor"
-  //                     strokeWidth="2"
-  //                     strokeLinecap="round"
-  //                     strokeLinejoin="round"
-  //                   />
-  //                   <path
-  //                     d="M20 21C20 16.5817 16.4183 13 12 13C7.58172 13 4 16.5817 4 21"
-  //                     stroke="currentColor"
-  //                     strokeWidth="2"
-  //                     strokeLinecap="round"
-  //                     strokeLinejoin="round"
-  //                   />
-  //                 </svg>
-  //                 <input
-  //                   id="profilePictureInput"
-  //                   type="file"
-  //                   accept="image/*"
-  //                   className="hidden"
-  //                   onChange={(e) => handleProfilePictureUpload(e, setProfilePicture)} // using the utility function
-  //                 />
-  //                 {profilePicture && (   // save button for profile pic upload
-  //                   <button
-  //                     onClick={uploadHelper()}
-  //                     className="absolute bottom-0 right-0 bg-blue-500 text-white px-2 py-1 rounded-md text-sm hover:bg-blue-600 hidden"
-  //                   >
-  //                     Save
-  //                   </button>
-  //                 )}
-  //               </div>
-  //             )}
-
-  //             <button 
-  //               onClick={handleLogout} 
-  //               className="mt-4 px-2 py-1 bg-red-500 text-white text-lg font-passion-one rounded-md hover:bg-red-600">
-  //               Logout
-  //             </button>
-  //           </div>
-  //         </div>
-  //       </header>
-
-  //       {/* Main Content */}
-  //       <main className="max-w-7xl mx-auto px-8 py-4">
-  //         {/* Category Boxes - Clickable and Much Bigger */}
-  //         <div className="flex justify-center mb-8">
-  //           <div className="flex space-x-8">
-  //             {categories.slice(1).map((category) => (
-  //               <div
-  //                 key={category.id}
-  //                 className="flex flex-col items-center cursor-pointer transition-all duration-200"
-  //                 onClick={() => setSelectedCategory(category.id)}
-  //                 style={{
-  //                   transform: selectedCategory === category.id ? "scale(1.15)" : "scale(1)",
-  //                 }}
-  //               >
-  //                 <span
-  //                   className={`mb-3 font-lobster font-medium ${selectedCategory === category.id ? "text-2xl font-bold" : "text-xl"}`}
-  //                 >
-  //                   {category.name}
-  //                 </span>
-  //                 <div
-  //                   className={`${category.color} rounded-md transition-all duration-200`}
-  //                   style={{
-  //                     width: selectedCategory === category.id ? "42px" : "36px",
-  //                     height: selectedCategory === category.id ? "28px" : "24px",
-  //                   }}
-  //                 ></div>
-  //               </div>
-  //             ))}
-  //           </div>
-  //         </div>
-
-  //         {/* New Project button - Text centered above button */}
-  //         <div className="flex justify-center mb-10">
-  //           <div className="flex flex-col items-center">
-  //             <span className="mb-3 text-xl font-abril-fatface font-medium">New Project</span>
-  //             <div
-  //               className="w-32 h-20 border-2 border-dashed border-gray-300 rounded-md flex items-center justify-center cursor-pointer hover:bg-gray-50"
-  //               onClick={() => setShowNewProjectModal(true)}
-  //             >
-  //               <PlusCircle size={32} className="text-gray-400" />
-  //             </div>
-  //           </div>
-  //         </div>
-
-  //         {viewMode === "list" ? (
-  //           <>
-  //             {/* Project Table Header */}
-  //             <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-gray-50 border-b border-gray-200 mb-2">
-  //               <div className="col-span-1"></div>
-  //               <div className="col-span-3 font-medium text-gray-700 text-base">Project (Window) Name</div>
-  //               <div className="col-span-3 font-medium text-gray-700 text-base">Progress Bar</div>
-  //               <div className="col-span-2 font-medium text-gray-700 text-base">Time Left</div>
-  //               <div className="col-span-2 font-medium text-gray-700 text-base">Difficulty</div>
-  //               <div className="col-span-1"></div>
-  //             </div>
-
-  //             {/* Project Rows */}
-  //             {filteredProjects.length > 0 ? (
-  //               filteredProjects.map((project) => (
-  //                 <div
-  //                   key={project.id}
-  //                   className="grid grid-cols-12 gap-4 px-6 py-4 border-b border-gray-200 hover:bg-gray-50 mb-1"
-  // // Get icon component based on icon name
-
-  //FUJAI 
 
   const getCategoryIcon = (iconName) => {
     switch (iconName) {
@@ -950,9 +757,9 @@ export default function HomePage() {
   const saveEditedProject = () => {
     if (!projectToEdit) return
 
-    // Preserve the system category if it's "Archived", otherwise recalculate
+    // Preserve the system category if it's "Completed", otherwise recalculate
     const systemCategory =
-      projectToEdit.systemCategory === "Archived" ? "Archived" : determineSystemCategory(projectToEdit.dueDate)
+      projectToEdit.systemCategory === "Completed" ? "Completed" : determineSystemCategory(projectToEdit.dueDate)
 
     // Recalculate time left
     const timeLeft = calculateTimeLeft(projectToEdit.dueDate)
@@ -961,7 +768,7 @@ export default function HomePage() {
       ...projectToEdit,
       timeLeft,
       systemCategory,
-      alert: timeLeft === "Today" && systemCategory !== "Archived",
+      alert: timeLeft === "Today" && systemCategory !== "Completed",
     }
 
     // First, find and remove the project from its original location
@@ -1107,7 +914,7 @@ export default function HomePage() {
         return (
           dueDate.getDate() === date.getDate() &&
           dueDate.getMonth() === date.getMonth() &&
-          date.getFullYear() === date.getFullYear()
+          dueDate.getFullYear() === date.getFullYear()
         )
       })
     }
@@ -1151,6 +958,21 @@ export default function HomePage() {
         "November",
         "December",
       ]
+
+      const monthIcons = {     // cool little icons for each month
+        January: <Flower size={32} className="text-[#FF8C6B] animate-spin" style={{ animationDuration: '3s' }} />,
+        February: <Flower size={32} className="text-[#FF8C6B] animate-spin" style={{ animationDuration: '3s' }} />,
+        March: <Flower size={32} className="text-[#FF8C6B] animate-spin" style={{ animationDuration: '3s' }} />,
+        April: <Flower size={32} className="text-[#FF8C6B] animate-spin" style={{ animationDuration: '3s' }} />,
+        May: <Sun size={32} className="text-[#FF8C6B] animate-spin" style={{ animationDuration: '3s' }} />,
+        June: <Sun size={32} className="text-[#FF8C6B] animate-spin" style={{ animationDuration: '3s' }} />,
+        July: <Sun size={32} className="text-[#FF8C6B] animate-spin" style={{ animationDuration: '3s' }} />,
+        August: <Sun size={32} className="text-[#FF8C6B] animate-spin" style={{ animationDuration: '3s' }} />,
+        September: <Snowflake size={32} className="text-[#FF8C6B] animate-spin" style={{ animationDuration: '3s' }} />,
+        October: <Snowflake size={32} className="text-[#FF8C6B] animate-spin" style={{ animationDuration: '3s' }} />,
+        November: <Snowflake size={32} className="text-[#FF8C6B] animate-spin" style={{ animationDuration: '3s' }} />,
+        December: <Snowflake size={32} className="text-[#FF8C6B] animate-spin" style={{ animationDuration: '3s' }} />,
+      }
   
       const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
   
@@ -1186,20 +1008,20 @@ export default function HomePage() {
                   bgColor = "bg-green-100"
                   textColor = "text-green-800"
                 } else if (project.systemCategory === "Urgent") {
-                  bgColor = "bg-red-100"
+                  bgColor = "bg-red-200"
                   textColor = "text-red-800"
                 } else if (project.systemCategory === "Upcoming") {
-                  bgColor = "bg-orange-100"
+                  bgColor = "bg-orange-200"
                   textColor = "text-orange-800"
                 } else if (project.systemCategory === "Trivial") {
-                  bgColor = "bg-yellow-100"
+                  bgColor = "bg-yellow-200"
                   textColor = "text-yellow-800"
                 }
   
                 return (
                   <div
                     key={project.id}
-                    className={`text-xs p-1 rounded truncate ${bgColor} ${textColor}`}
+                    className={`text-lg p-1 rounded truncate font-passion-one ${bgColor} ${textColor}`}
                     title={project.name}
                   >
                     {project.name}
@@ -1214,10 +1036,13 @@ export default function HomePage() {
       return (
         <div className="bg-[#f8eece] rounded-lg p-4">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold text-[#FF8C6B]">
-              {monthNames[month]} {year}
-            </h2>
-            <div className="flex space-x-2">
+            <div className="flex items-center space-x-6">
+              <h2 className="text-3xl font-bold text-[#FF8C6B] font-abril-fatface">
+                {monthNames[month]} {year}
+              </h2>
+              {monthIcons[monthNames[month]]}
+            </div>
+            <div className="flex space-x-2 mt-6">
               <button onClick={prevMonth} className="p-2 rounded-md hover:bg-[#ffece3] text-[#FF8C6B]">
                 <ChevronLeft size={20} />
               </button>
@@ -1230,7 +1055,7 @@ export default function HomePage() {
           <div className="grid grid-cols-7 gap-1">
             {/* Day headers */}
             {dayNames.map((day) => (
-              <div key={day} className="text-center font-medium py-2 text-[#3B0764]">
+              <div key={day} className="text-center text-3xl font-jomhuria font-medium py-2 text-[#3B0764]">
                 {day}
               </div>
             ))}
@@ -1250,6 +1075,9 @@ export default function HomePage() {
               </button>
             </div>
           )}
+          <div className = "mt-5">
+            <p className = "racing-sans-one-regular text-[#FF8C6B]">Note: Calendar View is global - shows projects of all categories</p>
+          </div>
         </div>
       )
     }
@@ -1270,11 +1098,16 @@ export default function HomePage() {
         ref={sidebarRef}
         className={`fixed top-0 left-0 h-full w-64 bg-[#f8eece] shadow-lg z-50 transform transition-transform duration-300 ease-in-out ${
           isMenuOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        } flex flex-col justify-between`}
       >
         <div className="p-6">
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-xl font-bold font-jomhuria text-[#FF8C6B]">TabMark</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-5xl font-bold font-jomhuria tracking-wide text-[#FF8C6B] mt-3">TabMark</h2>
+            <img
+                src="../public/bookmark-64.png"
+                alt="TabMark Logo"
+                className="h-8 w-8 mr-4 mt-1"
+              />
             <button onClick={() => setIsMenuOpen(false)} className="text-gray-500 hover:text-gray-700">
               <X size={20} />
             </button>
@@ -1288,7 +1121,7 @@ export default function HomePage() {
                 setSelectedSystemCategory(null)
                 setIsMenuOpen(false)
               }}
-              className="flex items-center justify-center w-full px-3 py-2 rounded-md transition-colors bg-[#f8eece] hover:bg-[#f5e5b5] text-[#4a2b40] font-medium"
+              className="flex items-center justify-center w-full px-3 py-2 rounded-md transition-colors text-xl racing-sans-one-regular bg-[#f8eece] hover:bg-[#f5e5b5] text-[#4a2b40] font-medium"
             >
               <span>All Projects</span>
             </button>
@@ -1296,22 +1129,22 @@ export default function HomePage() {
 
           <div>
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-sm uppercase text-gray-500 font-medium">Project Categories</h3>
+              <h3 className="text-m uppercase text-gray-500 font-passion-one font-medium">Project Categories</h3>
               <button
                 onClick={() => setShowNewCategoryModal(true)}
-                className="bg-[#FF8C6B] text-white hover:bg-[#ff7a55] flex items-center text-sm font-medium px-3 py-1 rounded-md"
+                className="bg-[#FF8C6B] text-white hover:bg-[#ff7a55] flex items-center text-sm font-abril-fatface font-medium px-3 py-1 rounded-md"
               >
                 <Plus size={16} className="mr-1" />
                 New
               </button>
             </div>
 
-              {projectCategories.length === 0 ? (
+            {projectCategories.length === 0 ? (
                 <div className="py-4 px-3 bg-[#f8eece] rounded-md text-center mb-4">
-                  <p className="text-sm text-gray-500">No categories yet</p>
+                  <p className="text-sm text-gray-500 oleo-script-regular">No categories yet</p>
                   <button
                     onClick={() => setShowNewCategoryModal(true)}
-                    className="mt-2 text-[#FF8C6B] hover:text-[#ff7a55] text-sm font-medium"
+                    className="mt-2 text-[#FF8C6B] hover:text-[#ff7a55] text-sm font-medium font-passion-one"
                   >
                     Create your first category
                   </button>
@@ -1325,8 +1158,8 @@ export default function HomePage() {
                           onClick={() => selectUserCategory(category.id)}
                           className={`flex items-center w-full px-3 py-2 rounded-md transition-colors ${
                             selectedUserCategory === category.id
-                              ? "bg-[#fff0e0] text-[#FF8C6B] font-medium"
-                              : "hover:bg-gray-50"
+                              ? "bg-[#fff0e0] text-[#FF8C6B] text-sm oleo-script-regular"
+                              : "hover:bg-gray-50 text-sm oleo-script-regular"
                           }`}
                         >
                           {getCategoryIcon(category.icon)}
@@ -1337,7 +1170,7 @@ export default function HomePage() {
                           e.stopPropagation()
                           initiateEditCategory(category)
                         }}
-                        className="p-1 text-gray-400 hover:text-[#FF8C6B]"
+                        className="p-0 text-gray-400 hover:text-[#FF8C6B]"
                         title="Edit category"
                       >
                         <svg
@@ -1362,6 +1195,12 @@ export default function HomePage() {
             )}
           </div>
         </div>
+        <div className="p-4 flex items-center justify-start">
+          <p className="text-lg racing-sans-one-regular text-[#FF8C6B] flex items-center gap-4">
+            Bays Inc. 2025 ©
+            <Leaf size={22} className="text-[#FF8C6B] translate-y-0" />
+          </p>
+        </div>
       </div>
 
       {/* New Category Modal */}
@@ -1374,7 +1213,7 @@ export default function HomePage() {
           ></div>
           <div className="bg-[#f8eece] rounded-2xl shadow-xl w-full max-w-md relative z-10">
             <div className="px-6 py-4 border-b border-gray-200 rounded-t-2xl">
-              <h2 className="text-xl font-bold text-[#3B0764]">Create New Category</h2>
+              <h2 className="text-5xl tracking-wide font-bold text-[#3B0764] font-jomhuria">Create New Category</h2>
               <button
                 onClick={() => setShowNewCategoryModal(false)}
                 className="absolute top-4 right-4 text-gray-400 hover:text-gray-500"
@@ -1385,28 +1224,28 @@ export default function HomePage() {
 
             <div className="px-6 py-4 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-[#3B0764] mb-1">Category Name</label>
+                <label className="block text-lg font-medium text-[#3B0764] mb-1 font-passion-one">Category Name</label>
                 <input
                   type="text"
                   placeholder="e.g. Work Projects, School Assignments"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8C6B]"
+                  className="w-full text-xs font-spline-sans-tab px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8C6B]"
                   value={newCategory.name}
                   onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#3B0764] mb-1">Description</label>
+                <label className="block text-lg font-medium text-[#3B0764] mb-1 font-passion-one">Description</label>
                 <textarea
                   placeholder="Enter a description for this category"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8C6B] min-h-[80px]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-xs font-spline-sans-tab focus:outline-none focus:ring-2 focus:ring-[#FF8C6B] min-h-[80px]"
                   value={newCategory.description}
                   onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#3B0764] mb-1">Icon</label>
+                <label className="block text-lg font-medium text-[#3B0764] mb-1 font-passion-one">Icon</label>
                 <div className="grid grid-cols-5 gap-2">
                   {["briefcase", "user", "book", "search", "heart"].map((icon) => (
                     <button
@@ -1430,13 +1269,13 @@ export default function HomePage() {
             <div className="px-6 py-4 bg-[#f8eece] flex justify-end rounded-b-2xl">
               <button
                 onClick={() => setShowNewCategoryModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded-md text-[#3B0764] mr-2 hover:bg-gray-100"
+                className="px-4 py-2 border border-gray-300 rounded-md text-[#3B0764] mr-2 hover:bg-gray-100 text-sm font-abril-fatface"
               >
                 Cancel
               </button>
               <button
                 onClick={addNewCategory}
-                className="px-4 py-2 bg-[#FF8C6B] text-white rounded-md hover:bg-[#ff7a55]"
+                className="px-4 py-2 bg-[#FF8C6B] text-white rounded-md hover:bg-[#ff7a55] text-sm font-abril-fatface"
                 disabled={!newCategory.name.trim()}
               >
                 Create Category
@@ -1456,160 +1295,181 @@ export default function HomePage() {
       )}
 
       {/* Header/Navigation */}
-      <header className="bg-[#FF8C6B] shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 py-3 flex justify-between items-center">
-          <div className="flex items-center">
-            <button
-              className="p-2 rounded-md text-white hover:bg-white/20 focus:outline-none menu-button mr-2"
-              onClick={() => setIsMenuOpen(true)}
+ <header className="bg-[#FF8C6B] shadow-sm">
+  <div className="max-w-8xl mx-auto px-6 sm:px-8 lg:px-10 py-3 flex items-center">
+    {/* Left section - fixed width */}
+    <div className="flex items-center w-1/3">
+      <button
+        className="p-2 rounded-md text-white hover:bg-white/20 focus:outline-none menu-button mr-2"
+        onClick={() => setIsMenuOpen(true)}
+      >
+        <Menu size={24} />
+      </button>
+      <h2 className="text-5xl font-bold font-jomhuria text-[#f8eece] tracking-wide mt-2 mr-2">TabMark</h2>
+      <img
+        src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/bookmark-64%281%29-caVEaypHq7HypkUQUhgXo9jXEtcCaE.png"
+        alt="TabMark Logo"
+        className="h-6 w-6 mr-3"
+      />
+      <button className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded-md flex items-center justify-center text-white font-passion-one font-medium transition-colors">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="mr-1"
+        >
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+        FAQ
+      </button>
+    </div>
+
+    {/* Center view toggle buttons - fixed width and centered */}
+    <div className="flex items-center justify-center w-1/3">
+      <div className="flex items-center justify-center space-x-2 bg-white/10 p-1 rounded-lg">
+        <button
+          onClick={() => changeViewMode("list")}
+          className={`flex items-center px-3 py-1 rounded-md transition-all duration-300 ${
+            viewMode === "list" ? "bg-white text-[#FF8C6B] font-medium text-xl shadow-sm font-passion-one" : "text-white text-lg hover:bg-white/20 font-passion-one"
+          }`}
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="mr-2"
+          >
+            <rect x="4" y="5" width="16" height="2" rx="1" fill="currentColor" />
+            <rect x="4" y="11" width="12" height="2" rx="1" fill="currentColor" />
+            <rect x="4" y="17" width="14" height="2" rx="1" fill="currentColor" />
+          </svg>
+          <span>List</span>
+        </button>
+
+        <button
+          onClick={() => changeViewMode("calendar")}
+          className={`flex items-center px-3 py-1 rounded-md transition-all duration-300 ${
+            viewMode === "calendar"
+              ? "bg-white text-[#FF8C6B] font-medium text-xl shadow-sm font-passion-one"
+              : "text-white hover:bg-white/20 text-lg font-passion-one"
+          }`}
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="mr-2"
+          >
+            <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" />
+            <path d="M8 2V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            <path d="M16 2V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            <path d="M3 10H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            <circle cx="8" cy="14" r="1" fill="currentColor" />
+            <circle cx="12" cy="14" r="1" fill="currentColor" />
+            <circle cx="16" cy="14" r="1" fill="currentColor" />
+            <circle cx="8" cy="18" r="1" fill="currentColor" />
+            <circle cx="12" cy="18" r="1" fill="currentColor" />
+            <circle cx="16" cy="18" r="1" fill="currentColor" />
+          </svg>
+          <span>Calendar</span>
+        </button>
+      </div>
+    </div>
+
+    {/* Right section - Profile and Logout */}
+    <div className="flex items-center justify-end w-1/3">
+      {/* Profile Section - all elements in a single row */}
+      <div className="flex items-center space-x-4">
+        {/* 1. User Profile Picture */}
+        {user && user.photoURL ? (
+          <img
+            src={user.photoURL}
+            alt={`${user.displayName}'s profile`}
+            className="w-12 h-12 rounded-full"
+          />
+        ) : (
+          <div className="w-12 h-12 rounded-full flex items-center justify-center bg-gray-200">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              onClick={() => document.getElementById("profilePictureInput").click()}
+              className="cursor-pointer"
             >
-              <Menu size={24} />
-            </button>
-            <h2 className="text-xl font-bold text-white mr-2">TabMark</h2>
-            <img
-              src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/bookmark-64%281%29-caVEaypHq7HypkUQUhgXo9jXEtcCaE.png"
-              alt="TabMark Logo"
-              className="h-6 w-6 mr-3"
-            />
-            <button className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded-md flex items-center justify-center text-white font-medium transition-colors">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
+              <circle
+                cx="12"
+                cy="8"
+                r="5"
                 stroke="currentColor"
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="mr-1"
-              >
-                <circle cx="12" cy="12" r="10"></circle>
-                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-                <line x1="12" y1="17" x2="12.01" y2="17"></line>
-              </svg>
-              FAQ
-            </button>
+              />
+              <path
+                d="M20 21C20 16.5817 16.4183 13 12 13C7.58172 13 4 16.5817 4 21"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <input
+              id="profilePictureInput"
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => uploadHelper(e)}
+            />
           </div>
+        )}
 
-          {/* Center view toggle buttons with animation - Improved design */}
-          <div className="flex items-center justify-center space-x-2 bg-white/10 p-1 rounded-lg">
-            <button
-              onClick={() => changeViewMode("list")}
-              className={`flex items-center px-3 py-1 rounded-md transition-all duration-300 ${
-                viewMode === "list" ? "bg-white text-[#FF8C6B] font-medium shadow-sm" : "text-white hover:bg-white/20"
-              }`}
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="mr-2"
-              >
-                <rect x="4" y="5" width="16" height="2" rx="1" fill="currentColor" />
-                <rect x="4" y="11" width="12" height="2" rx="1" fill="currentColor" />
-                <rect x="4" y="17" width="14" height="2" rx="1" fill="currentColor" />
-              </svg>
-              <span>List</span>
-            </button>
+        {/* 2. User Display Name */}
+        {user ? (
+          <span className="font-chela-one-regular text-[#f8eece] text-lg">{formatDisplayName(user.displayName)}</span>
+        ) : (
+          <span className="font-chela-one-regular text-[#f8eece] text-lg">Loading...</span>
+        )}
 
-            <button
-              onClick={() => changeViewMode("calendar")}
-              className={`flex items-center px-3 py-1 rounded-md transition-all duration-300 ${
-                viewMode === "calendar"
-                  ? "bg-white text-[#FF8C6B] font-medium shadow-sm"
-                  : "text-white hover:bg-white/20"
-              }`}
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="mr-2"
-              >
-                <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" />
-                <path d="M8 2V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                <path d="M16 2V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                <path d="M3 10H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                <circle cx="8" cy="14" r="1" fill="currentColor" />
-                <circle cx="12" cy="14" r="1" fill="currentColor" />
-                <circle cx="16" cy="14" r="1" fill="currentColor" />
-                <circle cx="8" cy="18" r="1" fill="currentColor" />
-                <circle cx="12" cy="18" r="1" fill="currentColor" />
-                <circle cx="16" cy="18" r="1" fill="currentColor" />
-              </svg>
-              <span>Calendar</span>
-            </button>
-          </div>
+                      <div className="flex items-center space-x-4 group">
+                        {/* dynamic door icon - opens with user hovers over logout page*/}
+                        <div className="relative w-7 h-7">
+                          {/* default sate */}
+                          <DoorClosed
+                            size={28}
+                            className="text-[#f8eece] absolute inset-0 opacity-100 transition-opacity duration-200 group-hover:opacity-0"
+                          />
+                          {/* hover state */}
+                          <DoorOpen
+                            size={28}
+                            className="text-[#f8eece] absolute inset-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                          />
+                        </div>
 
-          <div className="flex items-center justify-end w-1/3 space-x-12">
-              {/* Profile Section */}
-              <span className="flex items-center space-x-4">
-                {user && user.photoURL ? (
-                  <img
-                    src={user.photoURL}
-                    alt={`${user.displayName}'s profile`}
-                    className="w-12 h-12 rounded-full"
-                  />
-                ) : (
-                  <div className="w-12 h-12 rounded-full flex items-center justify-center bg-gray-200">
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                      onClick={() => document.getElementById("profilePictureInput").click()}
-                      className="cursor-pointer"
-                    >
-                      <circle
-                        cx="12"
-                        cy="8"
-                        r="5"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M20 21C20 16.5817 16.4183 13 12 13C7.58172 13 4 16.5817 4 21"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                    <input
-                      id="profilePictureInput"
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => handleProfilePictureUpload(e, setProfilePicture)}
-                    />
-                  </div>
-                )}
-
-                {user ? (
-                  <span className="font-chela-one-regular text-white text-lg">{formatDisplayName(user.displayName)}</span>
-                ) : (
-                  <span className="font-chela-one-regular text-white text-lg">Loading...</span>
-                )}
-              </span>
-
-              {/* Logout Button */}
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 bg-red-500 text-white text-sm font-passion-one font-medium rounded-md hover:bg-red-600"
-              >
-                Logout
-              </button>
-            </div>
-        </div>
-      </header>
+                        <button
+                          onClick={handleLogout}
+                          className="px-4 py-2 bg-red-500 text-white font-passion-one font-medium rounded-md hover:bg-red-600 transition-all"
+                        >
+                          Logout
+                        </button>
+                      </div>
+      </div>
+    </div>
+  </div>
+</header>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -1617,9 +1477,9 @@ export default function HomePage() {
         {viewMode === "list" &&
           (selectedSystemCategory || selectedUserCategory || (!selectedSystemCategory && !selectedUserCategory)) && (
             <div className="mb-4 text-center">
-              <h1 className="text-2xl font-bold text-[#3B0764]">{getCurrentCategoryName()}</h1>
+              <h1 className="text-5xl font-bold font-jomhuria tracking-wide text-[#3B0764]">{getCurrentCategoryName()}</h1>
               {selectedUserCategory && (
-                <p className="text-gray-600 mt-1">
+                <p className="text-gray-600 mt-1 mb-6 text-lg font-passion-one">
                   {projectCategories.find((c) => c.id === selectedUserCategory)?.description || ""}
                 </p>
               )}
@@ -1642,35 +1502,66 @@ export default function HomePage() {
                 <div className="flex space-x-8 sm:space-x-12">
                   {systemCategories.map((category) => (
                     <div
-                      key={category.id}
-                      className="flex flex-col items-center cursor-pointer transition-all duration-200"
-                      onClick={() => selectSystemCategory(category.id)}
+                    key={category.id}
+                    className="flex flex-col items-center cursor-pointer transition-all duration-200 group"
+                    onClick={() => selectSystemCategory(category.id)}
+                  >
+                    <span
+                      className={`mb-2 font-medium ${
+                        selectedSystemCategory === category.id ? "text-3xl font-bold" : "text-xl"
+                      } racing-sans-one-regular text-[#3B0764]`}
                     >
-                      <span
-                        className={`mb-2 font-medium ${selectedSystemCategory === category.id ? "text-xl font-bold" : "text-lg"} text-[#3B0764]`}
-                      >
-                        {category.name}
-                      </span>
-                      <div
-                        className={`${category.color} rounded-md transition-all duration-200`}
-                        style={{
-                          width: selectedSystemCategory === category.id ? "50px" : "40px",
-                          height: selectedSystemCategory === category.id ? "30px" : "24px",
-                        }}
-                      ></div>
+                      {category.name}
+                    </span>
+                    <div
+                      className={`${category.color} rounded-md transition-all duration-200 flex items-center justify-center`}
+                      style={{
+                        width: selectedSystemCategory === category.id ? "60px" : "50px",
+                        height: selectedSystemCategory === category.id ? "36px" : "30px",
+                      }}
+                    >
+                      {/* Icon for selected state */}
+                      {selectedSystemCategory === category.id && (
+                        <Eye size={28} className="text-[#f8eece]" />
+                      )}
+                  
+                      {/* Icon for non-selected state with blinking effect */}
+                      {selectedSystemCategory !== category.id && (
+                        <div className="relative">
+                          <EyeClosed
+                            size={22}
+                            className="text-[#f8eece] group-hover:opacity-0 transition-opacity duration-100"
+                          />
+                          <Eye
+                            size={22}
+                            className="text-[#f8eece] absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-100"
+                          />
+                        </div>
+                      )}
                     </div>
+                  </div>
                   ))}
                 </div>
               </div>
 
+              {!selectedSystemCategory && !selectedUserCategory && (
+                <div className="text-center py-8 mb-8">
+                  <h2 className="text-5xl font-passion-one font-bold text-[#FF8C6B] mb-3">Welcome to TabMark!</h2>
+                  <p className="text-purple-950 max-w-2xl mx-auto text-lg font-chela-one-regular">
+                    Select one of the categories above to see your projects sorted by urgency. You can also create custom
+                    categories from the menu on the left.
+                  </p>
+                </div>
+              )}
+
               {/* New Project button - Centered design */}
-              <div className="flex justify-center mb-6">
+              <div className="flex justify-center mb-6 mt-10">
                 <button
                   onClick={() => setShowNewProjectModal(true)}
                   className="flex items-center px-4 py-2 bg-[#FF8C6B] hover:bg-[#ff7a55] text-white rounded-md transition-colors shadow-sm"
                 >
                   <PlusCircle size={16} className="mr-2" />
-                  <span className="font-medium">New Project</span>
+                  <span className="font-medium font-abril-fatface">New Project</span>
                 </button>
               </div>
             </div>
@@ -1691,10 +1582,10 @@ export default function HomePage() {
               {/* Project Table Header */}
               <div className="grid grid-cols-12 gap-4 px-6 py-3 border-b border-[#e6d6a6] mb-2">
                 <div className="col-span-1"></div>
-                <div className="col-span-3 font-medium text-[#3B0764] text-base">Project (Window) Name</div>
-                <div className="col-span-3 font-medium text-[#3B0764] text-base">Progress Bar</div>
-                <div className="col-span-2 font-medium text-[#3B0764] text-base">Time Left</div>
-                <div className="col-span-2 font-medium text-[#3B0764] text-base">Difficulty</div>
+                <div className="col-span-3 font-medium text-xl text-[#3B0764] text-base font-passion-one">Project (Window) Name</div>
+                <div className="col-span-3 font-medium text-xl text-[#3B0764] text-base font-passion-one">Progress Bar</div>
+                <div className="col-span-2 font-medium text-xl text-[#3B0764] text-base font-passion-one flex items-center justify-center mr-6">Time Left</div>
+                <div className="col-span-2 font-medium text-xl text-[#3B0764] text-base font-passion-one">Difficulty</div>
                 <div className="col-span-1"></div>
               </div>
 
@@ -1715,7 +1606,7 @@ export default function HomePage() {
                     </div>
                     <div className="col-span-3 flex items-center">
                       <span
-                        className={`text-base font-medium ${project.completed ? "text-gray-400 line-through" : "text-[#FF8C6B]"}`}
+                        className={`text-base font-medium text-xl font-abril-fatface ${project.completed ? "text-gray-400 line-through" : "text-[#FF8C6B]"}`}
                       >
                         {project.name}
                       </span>
@@ -1738,15 +1629,17 @@ export default function HomePage() {
                             className="absolute top-0 left-0 w-full h-4 opacity-0 cursor-pointer"
                           />
                         </div>
-                        <span className="ml-2 text-sm text-gray-500">{project.progress}%</span>
+                        <span className="ml-2 text-gray-500 text-xl font-passion-one">{project.progress}%</span>
                       </div>
                     </div>
-                    <div className="col-span-2 flex items-center">
-                      <span className="text-base text-gray-700">{project.timeLeft}</span>
-                      {project.timeLeft === "Today" && <AlertTriangle size={18} className="ml-2 text-[#ff5f6d]" />}
+                    <div className="col-span-2 flex items-center justify-center">
+                      <span className="text-base text-gray-700 text-xl font-passion-one flex items-center gap-2">
+                        {project.timeLeft}
+                        {project.timeLeft === "Today" && <AlertTriangle size={18} className="text-[#ff5f6d]" />}
+                      </span>
                     </div>
-                    <div className="col-span-2 flex items-center">{getDifficultyIcon(project.difficulty)}</div>
-                    <div className="col-span-1 flex items-center justify-end space-x-2">
+                    <div className="col-span-2 flex items-center text-xl oleo-script-regular">{getDifficultyIcon(project.difficulty)}</div>
+                    <div className="col-span-1 flex items-center justify-end space-x-2 ">
                       <button
                         onClick={() => initiateEditProject(project)}
                         className="text-gray-400 hover:text-[#FF8C6B] focus:outline-none"
@@ -1812,14 +1705,32 @@ export default function HomePage() {
                         />
                       </svg>
                     </div>
-                    <h3 className="text-xl font-medium text-[#FF8C6B] mb-2">No projects yet</h3>
-                    <p className="text-gray-500 mb-4">Get started by creating your first project</p>
-                    <button
-                      onClick={() => setShowNewProjectModal(true)}
-                      className="px-4 py-2 bg-[#FF8C6B] text-white rounded-md hover:bg-[#ff7a55]"
-                    >
-                      Create Project
-                    </button>
+
+                    {selectedSystemCategory === "Completed" ? (
+                      <>
+                        <h3 className="text-xl font-medium text-[#FF8C6B] mb-2 font-nova-square-regular">
+                          No project completed yet
+                        </h3>
+                        <p className="text-gray-500 mb-4 font-chela-one-regular">
+                          Let's get to completing projects!
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <h3 className="text-xl font-medium text-[#FF8C6B] mb-2 font-nova-square-regular">
+                          No projects yet
+                        </h3>
+                        <p className="text-gray-500 mb-4 font-chela-one-regular">
+                          Get started by creating your first project
+                        </p>
+                        <button
+                          onClick={() => setShowNewProjectModal(true)}
+                          className="px-4 py-2 bg-[#FF8C6B] text-white font-abril-fatface rounded-md hover:bg-[#ff7a55]"
+                        >
+                          Create Project
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               )}
@@ -1842,7 +1753,7 @@ export default function HomePage() {
           <div className="bg-[#f8eece] rounded-2xl shadow-xl w-full max-w-md relative z-10">
             {/* Modal Header - Centered Project title */}
             <div className="px-6 py-4 text-center rounded-t-2xl">
-              <h2 className="text-xl font-bold text-[#3B0764]">Project</h2>
+              <h2 className="text-5xl font-jomhuria font-bold text-[#3B0764]">Project</h2>
               <button
                 onClick={() => setShowNewProjectModal(false)}
                 className="absolute top-4 right-4 text-gray-400 hover:text-gray-500"
@@ -1855,11 +1766,11 @@ export default function HomePage() {
             <div className="px-6 py-4 space-y-6">
               {/* Project Name Input */}
               <div>
-                <label className="block text-sm font-medium text-[#3B0764] mb-1">Project Name</label>
+                <label className="block text-lg font-medium text-[#3B0764] mb-1 font-passion-one">Project Name</label>
                 <input
                   type="text"
                   placeholder="Enter project name"
-                  className="w-full px-3 py-2 border border-purple-950 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8C6B]"
+                  className="w-full px-3 py-2 border border-purple-950 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8C6B] font-spline-sans-tab text-sm"
                   value={newProject.name}
                   onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
                 />
@@ -1867,13 +1778,13 @@ export default function HomePage() {
 
               {/* Due Date - with min date validation */}
               <div>
-                <label className="block text-sm font-medium text-[#3B0764] mb-1">Due Date</label>
+                <label className="block font-medium text-[#3B0764] mb-1 text-lg font-passion-one">Due Date</label>
                 <div className="bg-[#fff0e0] rounded-md p-4 border border-[#ffd0b5]">
                   <div className="flex items-center bg-white rounded-md px-3 py-2">
                     <Calendar size={18} className="mr-2 text-[#FF8C6B]" />
                     <input
                       type="date"
-                      className="bg-transparent focus:outline-none w-full"
+                      className="bg-transparent focus:outline-none w-full font-spline-sans-tab text-sm"
                       value={newProject.dueDate}
                       min={today} // Prevent selecting dates before today
                       onChange={(e) => setNewProject({ ...newProject, dueDate: e.target.value })}
@@ -1884,12 +1795,12 @@ export default function HomePage() {
 
               {/* Difficulty */}
               <div>
-                <label className="block text-sm font-medium text-[#3B0764] mb-1">Difficulty</label>
+                <label className="block font-medium text-[#3B0764] mb-1 text-lg font-passion-one">Difficulty</label>
                 <div className="bg-[#fff0e0] rounded-md p-4 border border-[#ffd0b5]">
                   <div className="flex items-center bg-white rounded-md px-3 py-2">
                     <Clock size={18} className="mr-2 text-[#FF8C6B]" />
                     <select
-                      className="bg-transparent focus:outline-none w-full"
+                      className="bg-transparent focus:outline-none w-full font-spline-sans-tab text-sm"
                       value={newProject.difficulty}
                       onChange={(e) => setNewProject({ ...newProject, difficulty: e.target.value })}
                     >
@@ -1904,21 +1815,23 @@ export default function HomePage() {
               {/* Category Selection - Only show if no user category is selected */}
               {!selectedUserCategory && projectCategories.length > 0 && (
                 <div>
-                  <label className="block text-sm font-medium text-[#3B0764] mb-1">Project Category</label>
-                  <div className="flex items-center bg-[#f8eece] rounded-md px-3 py-2">
-                    <Briefcase size={18} className="mr-2 text-[#FF8C6B]" />
-                    <select
-                      className="bg-transparent focus:outline-none w-full"
-                      value={newProject.category || ""}
-                      onChange={(e) => setNewProject({ ...newProject, category: e.target.value || null })}
-                    >
-                      <option value="">No specific category</option>
-                      {projectCategories.map((category) => (
-                        <option key={category.id} value={category.id}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </select>
+                  <label className="block font-medium text-[#3B0764] mb-1 text-lg font-passion-one">Project Category</label>
+                  <div className="bg-[#fff0e0] rounded-md p-4 border border-[#ffd0b5]">
+                    <div className="flex items-center bg-white rounded-md px-3 py-2">
+                      <Briefcase size={18} className="mr-2 text-[#FF8C6B]" />
+                      <select
+                        className="bg-transparent focus:outline-none w-full font-spline-sans-tab text-sm"
+                        value={newProject.category || ""}
+                        onChange={(e) => setNewProject({ ...newProject, category: e.target.value || null })}
+                      >
+                        <option value="">No specific category</option>
+                        {projectCategories.map((category) => (
+                          <option key={category.id} value={category.id}>
+                            {category.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1928,7 +1841,7 @@ export default function HomePage() {
                 <div className="bg-[#fff0e0] rounded-md p-3 border border-[#ffd0b5]">
                   <div className="flex items-center">
                     <Briefcase size={18} className="mr-2 text-[#FF8C6B]" />
-                    <span className="text-sm font-medium text-[#FF8C6B]">
+                    <span className="text-lg font-passion-one font-medium text-[#FF8C6B]">
                       Creating in: {projectCategories.find((c) => c.id === selectedUserCategory)?.name}
                     </span>
                   </div>
@@ -1937,19 +1850,19 @@ export default function HomePage() {
 
               {/* Save Current Tabs Option - Orange */}
               <div className="bg-[#fff0e0] rounded-md p-4 border border-[#ffd0b5]">
-                <h3 className="text-lg font-medium text-[#FF8C6B] mb-2">Save Current Tabs</h3>
-                <p className="text-sm text-[#FF8C6B] mb-3">
+                <h3 className="text-lg font-medium text-[#FF8C6B] mb-2 racing-sans-one-regular">Save Current Tabs</h3>
+                <p className="font-spline-sans-tab text-sm text-[#FF8C6B] mb-3">
                   Would you like to save all currently open browser tabs with this project?
                 </p>
                 <div className="flex space-x-4">
                   <button
-                    className={`px-4 py-2 rounded-md ${newProject.saveTabs ? "bg-[#FF8C6B] text-white hover:bg-[#ff7a55]" : "bg-gray-200 text-gray-700"}`}
+                    className={`px-4 py-2 rounded-md ${newProject.saveTabs ? "bg-[#FF8C6B] text-white hover:bg-[#ff7a55] font-passion-one" : "bg-gray-200 text-purple-950 font-passion-one"}`}
                     onClick={() => setNewProject({ ...newProject, saveTabs: true })}
                   >
                     Yes
                   </button>
                   <button
-                    className={`px-4 py-2 rounded-md ${!newProject.saveTabs ? "bg-[#FF8C6B] text-white hover:bg-[#ff7a55]" : "bg-gray-200 text-purple-950"}`}
+                    className={`px-4 py-2 rounded-md ${!newProject.saveTabs ? "bg-[#FF8C6B] text-white hover:bg-[#ff7a55] font-passion-one" : "bg-gray-200 text-purple-950 font-passion-one"}`}
                     onClick={() => setNewProject({ ...newProject, saveTabs: false })}
                   >
                     No
@@ -1962,7 +1875,7 @@ export default function HomePage() {
             <div className="px-6 py-4 flex justify-end rounded-b-2xl">
               <button
                 onClick={addNewProject}
-                className="bg-[#FF8C6B] hover:bg-[#ff7a55] text-white px-4 py-2 rounded-md font-medium"
+                className="bg-[#FF8C6B] hover:bg-[#ff7a55] text-white px-4 py-2 rounded-md font-medium font-abril-fatface"
               >
                 Create Project
               </button>
@@ -1980,21 +1893,24 @@ export default function HomePage() {
             onClick={() => setShowDeleteConfirm(false)}
           ></div>
           <div className="bg-[#f8eece] rounded-2xl shadow-xl w-full max-w-md p-6 relative z-10">
-            <h3 className="text-lg font-bold text-[#FF8C6B] mb-4">Confirm Deletion</h3>
-            <p className="text-gray-600 mb-6">
+            <div className="flex items-center mb-4">
+              <X size={24} className="text-red-500 mr-2" />
+              <h3 className="text-lg racing-sans-one-regular font-bold text-[#FF8C6B]">Confirm Deletion</h3>
+            </div>
+            <p className="text-gray-600 mb-6 font-passion-one">
               Are you sure you want to delete this project? This action cannot be undone.
             </p>
 
             <div className="flex justify-end space-x-4">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 font-abril-fatface"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDelete}
-                className="px-4 py-2 bg-[#ff5f6d] text-white rounded-md hover:bg-[#ff4957]"
+                className="px-4 py-2 bg-[#ff5f6d] text-white rounded-md hover:bg-[#ff4957] font-abril-fatface"
               >
                 Delete
               </button>
@@ -2014,20 +1930,20 @@ export default function HomePage() {
           <div className="bg-[#f8eece] rounded-2xl shadow-xl w-full max-w-md p-6 relative z-10">
             <div className="flex items-center mb-4">
               <Check size={24} className="text-green-500 mr-2" />
-              <h3 className="text-lg font-bold text-[#FF8C6B]">Project Completion</h3>
+              <h3 className="text-lg racing-sans-one-regular font-bold text-[#FF8C6B]">Project Completion</h3>
             </div>
-            <p className="text-gray-600 mb-6">Have you completed this project? It will be marked as completed.</p>
+            <p className="text-gray-600 mb-6 font-passion-one">Have you completed this project? It will be marked as completed.</p>
 
             <div className="flex justify-end space-x-4">
               <button
                 onClick={() => setShowCompletionConfirm(false)}
-                className="px-4 py-2 bg-gray-200 text-[#3B0764] rounded-md hover:bg-gray-300"
+                className="px-4 py-2 bg-gray-200 text-[#3B0764] rounded-md hover:bg-gray-300 font-abril-fatface"
               >
                 No
               </button>
               <button
                 onClick={confirmCompletion}
-                className="px-4 py-2 bg-[#FF8C6B] text-white rounded-md hover:bg-[#3a1f30]"
+                className="px-4 py-2 bg-[#FF8C6B] text-white rounded-md hover:bg-[#3a1f30] font-abril-fatface"
               >
                 Yes, Complete
               </button>
@@ -2049,7 +1965,7 @@ export default function HomePage() {
           ></div>
           <div className="bg-[#f8eece] rounded-2xl shadow-xl w-full max-w-md relative z-10">
             <div className="px-6 py-4 text-center rounded-t-2xl">
-              <h2 className="text-xl font-bold text-purple-950">Edit Project</h2>
+              <h2 className="text-4xl font-bold text-purple-950 font-jomhuria">Edit Project</h2>
               <button
                 onClick={() => {
                   setShowEditProjectModal(false)
@@ -2064,11 +1980,11 @@ export default function HomePage() {
             <div className="px-6 py-4 space-y-6">
               {/* Project Name Input */}
               <div>
-                <label className="block text-sm font-medium text-[#3B0764] mb-1">Project Name</label>
+                <label className="block text-lg font-passion-one font-medium text-[#3B0764] mb-1 ">Project Name</label>
                 <input
                   type="text"
                   placeholder="Enter project name"
-                  className="w-full px-3 py-2 border border-purple-950 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8C6B]"
+                  className="w-full px-3 py-2 text-sm font-spline-sans-tab border border-purple-950 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8C6B]"
                   value={projectToEdit.name}
                   onChange={(e) => setProjectToEdit({ ...projectToEdit, name: e.target.value })}
                 />
@@ -2076,13 +1992,13 @@ export default function HomePage() {
 
               {/* Due Date */}
               <div>
-                <label className="block text-sm font-medium text-[#3B0764] mb-1">Due Date</label>
+                <label className="block text-lg font-passion-one font-medium text-[#3B0764] mb-1">Due Date</label>
                 <div className="bg-[#fff0e0] rounded-md p-4 border border-[#ffd0b5]">
                   <div className="flex items-center bg-white rounded-md px-3 py-2">
                     <Calendar size={18} className="mr-2 text-[#FF8C6B]" />
                     <input
                       type="date"
-                      className="bg-transparent focus:outline-none w-full"
+                      className="bg-transparent focus:outline-none w-full text-sm font-spline-sans-tab"
                       value={projectToEdit.dueDate}
                       min={today}
                       onChange={(e) => setProjectToEdit({ ...projectToEdit, dueDate: e.target.value })}
@@ -2093,12 +2009,12 @@ export default function HomePage() {
 
               {/* Difficulty */}
               <div>
-                <label className="block text-sm font-medium text-[#3B0764] mb-1">Difficulty</label>
+                <label className="block text-lg font-passion-one font-medium text-[#3B0764] mb-1">Difficulty</label>
                 <div className="bg-[#fff0e0] rounded-md p-4 border border-[#ffd0b5]">
                   <div className="flex items-center bg-white rounded-md px-3 py-2">
                     <Clock size={18} className="mr-2 text-[#FF8C6B]" />
                     <select
-                      className="bg-transparent focus:outline-none w-full"
+                      className="bg-transparent focus:outline-none w-full text-sm font-spline-sans-tab"
                       value={projectToEdit.difficulty}
                       onChange={(e) => setProjectToEdit({ ...projectToEdit, difficulty: e.target.value })}
                     >
@@ -2113,24 +2029,26 @@ export default function HomePage() {
               {/* Category Selection */}
               {projectCategories.length > 0 && (
                 <div>
-                  <label className="block text-sm font-medium text-[#3B0764] mb-1">Project Category</label>
-                  <div className="flex items-center bg-[#f8eece] rounded-md px-3 py-2">
-                    <Briefcase size={18} className="mr-2 text-[#FF8C6B]" />
-                    <select
-                      className="bg-transparent focus:outline-none w-full"
-                      value={projectToEdit.userCategory || ""}
-                      onChange={(e) => {
-                        const newCategoryId = e.target.value || null
-                        setProjectToEdit({ ...projectToEdit, userCategory: newCategoryId })
-                      }}
-                    >
-                      <option value="">No specific category</option>
-                      {projectCategories.map((category) => (
-                        <option key={category.id} value={category.id}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </select>
+                  <label className="block text-lg font-passion-one font-medium text-[#3B0764] mb-1">Project Category</label>
+                  <div className="bg-[#fff0e0] rounded-md p-4 border border-[#ffd0b5]">
+                    <div className="flex items-center bg-white rounded-md px-3 py-2">
+                      <Briefcase size={18} className="mr-2 text-[#FF8C6B]" />
+                      <select
+                        className="bg-transparent focus:outline-none w-full text-sm font-spline-sans-tab"
+                        value={projectToEdit.userCategory || ""}
+                        onChange={(e) => {
+                          const newCategoryId = e.target.value || null
+                          setProjectToEdit({ ...projectToEdit, userCategory: newCategoryId })
+                        }}
+                      >
+                        <option value="">No specific category</option>
+                        {projectCategories.map((category) => (
+                          <option key={category.id} value={category.id}>
+                            {category.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                 </div>
               )}
@@ -2142,13 +2060,13 @@ export default function HomePage() {
                   setShowEditProjectModal(false)
                   setProjectToEdit(null)
                 }}
-                className="px-4 py-2 border border-gray-300 rounded-md text-purple-950 mr-2 hover:bg-gray-100"
+                className="px-4 py-2 border border-gray-300 rounded-md text-purple-950 mr-2 hover:bg-gray-100 font-abril-fatface"
               >
                 Cancel
               </button>
               <button
                 onClick={saveEditedProject}
-                className="bg-[#FF8C6B] hover:bg-[#ff7a55] text-white px-4 py-2 rounded-md font-medium"
+                className="bg-[#FF8C6B] hover:bg-[#ff7a55] text-white px-4 py-2 rounded-md font-medium font-abril-fatface"
               >
                 Save Changes
               </button>
@@ -2160,16 +2078,15 @@ export default function HomePage() {
       {/* Edit Category Modal */}
       {showEditCategoryModal && categoryToEdit && (
         <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div>
-            <div className="fixed inset-0 " style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}>
+            <div className="fixed inset-0 " style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
               onClick={() => {
                 setShowEditCategoryModal(false)
                 setcategoryToEdit(null)
-              }}
+              }}>
             </div>
             <div className="bg-[#f8eece] rounded-2xl shadow-xl w-full max-w-md relative z-10">
               <div className="px-6 py-4 border-b border-gray-200 rounded-t-2xl">
-                <h2 className="text-xl font-bold text-purple-950">Edit Category</h2>
+                <h2 className="text-5xl font-jomhuria font-bold text-purple-950">Edit Category</h2>
                 <button
                   onClick={() => {
                     setShowEditCategoryModal(false)
@@ -2183,28 +2100,28 @@ export default function HomePage() {
 
               <div className="px-6 py-4 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-purple-950 mb-1">Category Name</label>
+                  <label className="block text-lg font-passion-one font-medium text-purple-950 mb-1">Category Name</label>
                   <input
                     type="text"
                     placeholder="e.g. Work Projects, School Assignments"
-                    className="w-full px-3 py-2 border border-purple-950 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8C6B]"
+                    className="w-full px-3 py-2 text-xs font-spline-sans-tab border border-purple-950 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8C6B]"
                     value={categoryToEdit.name}
                     onChange={(e) => setcategoryToEdit({ ...categoryToEdit, name: e.target.value })}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-purple-950 mb-1">Description</label>
+                  <label className="block text-lg font-passion-one font-medium text-purple-950 mb-1">Description</label>
                   <textarea
                     placeholder="Enter a description for this category"
-                    className="w-full px-3 py-2 border border-purple-950 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8C6B] min-h-[80px]"
+                    className="w-full px-3 py-2 text-xs font-spline-sans-tab  border border-purple-950 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8C6B] min-h-[80px]"
                     value={categoryToEdit.description || ""}
                     onChange={(e) => setcategoryToEdit({ ...categoryToEdit, description: e.target.value })}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-purple-950 mb-1">Icon</label>
+                  <label className="block text-lg font-passion-one font-medium text-purple-950 mb-1">Icon</label>
                   <div className="grid grid-cols-5 gap-2">
                     {["briefcase", "user", "book", "search", "heart"].map((icon) => (
                       <button
@@ -2232,20 +2149,19 @@ export default function HomePage() {
                     setShowEditCategoryModal(false)
                     setcategoryToEdit(null)
                   }}
-                  className="px-4 py-2 border border-purple-950 rounded-md text-purple-950 mr-2 hover:bg-gray-100"
+                  className="px-4 py-2 border border-purple-950 rounded-md text-purple-950 mr-2 hover:bg-gray-100 text-sm font-abril-fatface"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={saveEditedCategory}
-                  className="px-4 py-2 bg-[#FF8C6B] text-white rounded-md hover:bg-[#ff7a55]"
+                  className="px-4 py-2 bg-[#FF8C6B] text-white rounded-md hover:bg-[#ff7a55] text-sm font-abril-fatface"
                   disabled={!categoryToEdit.name.trim()}
                 >
                   Save Changes
                 </button>
               </div>
             </div>
-          </div>
         </div>
       )}
       {/* Unarchive Confirmation Modal */}

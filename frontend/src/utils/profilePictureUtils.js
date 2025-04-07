@@ -9,6 +9,7 @@ import 'react-toastify/dist/ReactToastify.css'
  */
 export const handleProfilePictureUpload = (e, setProfilePicture) => {
   const file = e.target.files[0];
+  console.log("entered")
   if (!file) return;
 
   if (!file.type.match("image.*")) {
@@ -18,6 +19,7 @@ export const handleProfilePictureUpload = (e, setProfilePicture) => {
       className: "font-passion-one text-xl",
       style: { backgroundColor: "#f44336", color: "white" },
     });
+    console.log("wrong file selected")
     return;
   }
 
@@ -28,9 +30,11 @@ export const handleProfilePictureUpload = (e, setProfilePicture) => {
       className: "font-passion-one text-xl",
       style: { backgroundColor: "#f44336", color: "white" },
     });
+    console.log("image file too big")
     return;
   }
 
+  console.log("image set")
   setProfilePicture(file);
   e.target.value = null; // Clear input value to allow re-uploads of the same file
 };
