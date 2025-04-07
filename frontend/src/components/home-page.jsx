@@ -12,6 +12,7 @@ export default function HomePage() {
   // Get user ID
   const userId = auth.currentUser?.uid
   const userName = auth.currentUser?.displayName
+  const userMail = auth.currentUser?.email
 
   
   const [projects, setProjects] = useState([]); // Ensure this state is defined
@@ -93,27 +94,29 @@ export default function HomePage() {
   // Function to confirm project completion and move to Archived
   const confirmCompletion = () => {
     if (projectToComplete !== null) {
+      const currentDate = new Date().toISOString().split("T")[0] // Get the current date in YYYY-MM-DD format
+  
       // Update the local state
       setProjects(
         projects.map((project) =>
           project.id === projectToComplete
-            ? { ...project, category: "Archived", completed: true }
+            ? { ...project, category: "Archived", completed: true, completionDate: currentDate }
             : project
         )
-      );
+      )
   
       // Update the project in Firestore
       modifyProjectInFirestore({
         userId,
         projectId: projectToComplete.toString(),
-        updatedData: { category: "Archived", completed: true },
+        updatedData: { category: "Archived", completed: true, completionDate: currentDate },
         onSuccess: () => {
           console.log("Project marked as completed and updated in Firestore!");
         },
         onError: (error) => {
           console.error("Error updating project completion in Firestore:", error);
         },
-      });
+      })
   
       // Close the confirmation modal
       setShowCompletionConfirm(false);
@@ -175,6 +178,7 @@ export default function HomePage() {
     uploadProjectToFirestore({
       userId,
       userName,
+      userMail,
       projectData,
       onSuccess: () => {
         console.log("Project uploaded successfully!");
