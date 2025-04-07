@@ -5,20 +5,29 @@ const { sendEmail } = require('../services/sendGridService');
 
 // Initialize Firebase Admin SDK if not already initialized
 if (!admin.apps.length) {
-  const serviceAccount = require('../firebase-service-account-key.json'); // Ensure the path is correct
   admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
+    credential: admin.credential.cert({
+      type: process.env.FIREBASE_TYPE,
+      project_id: process.env.FIREBASE_PROJECT_ID,
+      private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
+      private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      client_email: process.env.FIREBASE_CLIENT_EMAIL,
+      client_id: process.env.FIREBASE_CLIENT_ID,
+      auth_uri: process.env.FIREBASE_AUTH_URI,
+      token_uri: process.env.FIREBASE_TOKEN_URI,
+      auth_provider_x509_cert_url: process.env.FIREBASE_AUTH_PROVIDER_X509_CERT_URL,
+      client_x509_cert_url: process.env.FIREBASE_CLIENT_X509_CERT_URL,
+    }),
   });
 }
 
 const db = getFirestore();
 
 /**
- * Fetches users and their "Archived" projects completed within the last week, and sends weekly emails.
+ * Fetches users and their "Completed" projects completed within the last week, and sends weekly emails.
  */
 const sendWeeklyEmails = async () => {
   try {
-    // Fetch all user documents from the "projects" collection
     const usersSnapshot = await db.collection('projects').get();
 
     for (const userDoc of usersSnapshot.docs) {
@@ -28,26 +37,26 @@ const sendWeeklyEmails = async () => {
 
       if (!userEmail) continue; // Skip if no email is found
 
-      // Fetch "Archived" projects completed within the last week
       const projectsRef = db.collection(`projects/${userDoc.id}/userProjects`);
-      const archivedProjectsSnapshot = await projectsRef
-        .where('systemCategory', '==', 'Archived')
-        .get();
+      const completedProjectsSnapshot = await projectsRef.where('systemCategory', '==', 'Completed').get();
 
       const oneWeekAgo = new Date();
       oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-      const recentArchivedProjects = archivedProjectsSnapshot.docs
+      const recentCompletedProjects = completedProjectsSnapshot.docs
         .map((doc) => doc.data())
         .filter((project) => {
-          const completionDate = new Date(project.completionDate); // Use completionDate instead of dueDate
+          if (!project.completionDate) return false;
+
+          const completionDate = new Date(project.completionDate);
+          if (isNaN(completionDate)) return false;
+
           return completionDate >= oneWeekAgo && completionDate <= new Date();
         });
 
-      if (recentArchivedProjects.length === 0) continue; // Skip if no recent archived projects
+      if (recentCompletedProjects.length === 0) continue; // Skip if no recent completed projects
 
-      // Prepare email content
-      const projectList = recentArchivedProjects
+      const projectList = recentCompletedProjects
         .map((project) => `<li>${project.name} - Completed on: ${project.completionDate}</li>`)
         .join('');
       const emailHtml = `
@@ -58,7 +67,6 @@ const sendWeeklyEmails = async () => {
         <p>Keep up the great work!</p>
       `;
 
-      // Send email
       await sendEmail(
         userEmail,
         'Weekly Congratulations: Completed Projects',
@@ -75,7 +83,7 @@ const sendWeeklyEmails = async () => {
 
 // Schedule the job to run every Monday at 8:00 AM
 cron.schedule('0 8 * * 1', sendWeeklyEmails, {
-  timezone: 'America/Los_Angeles', // Adjust timezone as needed
+  timezone: 'America/Los_Angeles',
 });
 
 module.exports = { sendWeeklyEmails };

@@ -28,7 +28,6 @@ const db = getFirestore();
  */
 const sendDailyEmails = async () => {
   try {
-    // Fetch all user documents from the "projects" collection
     const usersSnapshot = await db.collection('projects').get();
 
     for (const userDoc of usersSnapshot.docs) {
@@ -38,13 +37,11 @@ const sendDailyEmails = async () => {
 
       if (!userEmail) continue; // Skip if no email is found
 
-      // Fetch "Urgent" projects for the user
       const projectsRef = db.collection(`projects/${userDoc.id}/userProjects`);
       const urgentProjectsSnapshot = await projectsRef.where('systemCategory', '==', 'Urgent').get();
 
       if (urgentProjectsSnapshot.empty) continue; // Skip if no "Urgent" projects
 
-      // Prepare email content
       const projectList = urgentProjectsSnapshot.docs
         .map((doc) => `<li>${doc.data().name} - Due: ${doc.data().dueDate}</li>`)
         .join('');
@@ -56,7 +53,6 @@ const sendDailyEmails = async () => {
         <p>Stay on track and complete them on time!</p>
       `;
 
-      // Send email
       await sendEmail(
         userEmail,
         'Daily Reminder: Urgent Projects',
@@ -73,7 +69,7 @@ const sendDailyEmails = async () => {
 
 // Schedule the job to run daily at 8:00 AM
 cron.schedule('0 8 * * *', sendDailyEmails, {
-  timezone: 'America/Los_Angeles', // Adjust timezone as needed
+  timezone: 'America/Los_Angeles',
 });
 
 module.exports = { sendDailyEmails };
