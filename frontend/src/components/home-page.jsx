@@ -1121,7 +1121,7 @@ export default function HomePage() {
                 setSelectedSystemCategory(null)
                 setIsMenuOpen(false)
               }}
-              className="flex items-center justify-center w-full px-3 py-2 rounded-md transition-colors text-xl racing-sans-one-regular bg-[#f8eece] hover:bg-[#f5e5b5] text-[#4a2b40] font-medium"
+              className="flex items-center justify-center w-full px-3 py-2 rounded-md transition-colors text-xl racing-sans-one-regular bg-[#FF8C6B] hover:bg-[#f5e5b5] text-[#f8eece] hover:text-[#FF8C6B] font-medium"
             >
               <span>All Projects</span>
             </button>
@@ -1129,7 +1129,7 @@ export default function HomePage() {
 
           <div>
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-m uppercase text-gray-500 font-passion-one font-medium">Project Categories</h3>
+              <h3 className="text-m uppercase text-[#4a2b40] font-passion-one font-medium">Project Categories</h3>
               <button
                 onClick={() => setShowNewCategoryModal(true)}
                 className="bg-[#FF8C6B] text-white hover:bg-[#ff7a55] flex items-center text-sm font-abril-fatface font-medium px-3 py-1 rounded-md"
@@ -1158,8 +1158,8 @@ export default function HomePage() {
                           onClick={() => selectUserCategory(category.id)}
                           className={`flex items-center w-full px-3 py-2 rounded-md transition-colors ${
                             selectedUserCategory === category.id
-                              ? "bg-[#fff0e0] text-[#FF8C6B] text-sm oleo-script-regular"
-                              : "hover:bg-gray-50 text-sm oleo-script-regular"
+                              ? "bg-[#fff0e0] text-[#FF8C6B] text-sm font-chela-one-regular"
+                              : "hover:bg-[#f5e5b5] text-[#4a2b40] text-sm font-chela-one-regular"
                           }`}
                         >
                           {getCategoryIcon(category.icon)}
@@ -1253,7 +1253,7 @@ export default function HomePage() {
                       type="button"
                       onClick={() => setNewCategory({ ...newCategory, icon })}
                       className={`flex items-center justify-center p-2 rounded-md ${
-                        newCategory.icon === icon ? "bg-[#fff0e0] text-[#FF8C6B]" : "bg-gray-100 text-gray-600"
+                        newCategory.icon === icon ? "bg-[#f5e5b5] text-[#FF8C6B]" : "bg-[#f8eece]  text-gray-600"
                       }`}
                     >
                       {icon === "briefcase" && <Briefcase size={20} />}
@@ -1818,7 +1818,8 @@ export default function HomePage() {
                   <label className="block font-medium text-[#3B0764] mb-1 text-lg font-passion-one">Project Category</label>
                   <div className="bg-[#fff0e0] rounded-md p-4 border border-[#ffd0b5]">
                     <div className="flex items-center bg-white rounded-md px-3 py-2">
-                      <Briefcase size={18} className="mr-2 text-[#FF8C6B]" />
+                      {/* Dynamically render the icon based on the selected category */}
+                      {newProject.category && getCategoryIcon(projectCategories.find((c) => c.id === newProject.category)?.icon)}
                       <select
                         className="bg-transparent focus:outline-none w-full font-spline-sans-tab text-sm"
                         value={newProject.category || ""}
@@ -1840,7 +1841,8 @@ export default function HomePage() {
               {selectedUserCategory && (
                 <div className="bg-[#fff0e0] rounded-md p-3 border border-[#ffd0b5]">
                   <div className="flex items-center">
-                    <Briefcase size={18} className="mr-2 text-[#FF8C6B]" />
+                    {/* Dynamically render the icon based on the selected category */}
+                    {getCategoryIcon(projectCategories.find((c) => c.id === selectedUserCategory)?.icon)}
                     <span className="text-lg font-passion-one font-medium text-[#FF8C6B]">
                       Creating in: {projectCategories.find((c) => c.id === selectedUserCategory)?.name}
                     </span>
@@ -2129,7 +2131,7 @@ export default function HomePage() {
                         type="button"
                         onClick={() => setcategoryToEdit({ ...categoryToEdit, icon })}
                         className={`flex items-center justify-center p-2 rounded-md ${
-                          categoryToEdit.icon === icon ? "bg-[#fff0e0] text-[#FF8C6B]" : "bg-gray-100 text-purple-950"
+                          categoryToEdit.icon === icon ? "bg-[#f5e5b5] text-[#FF8C6B]" : "bg-[#f8eece]  text-gray-600"
                         }`}
                       >
                         {icon === "briefcase" && <Briefcase size={20} />}
