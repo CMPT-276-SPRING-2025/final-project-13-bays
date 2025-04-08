@@ -1,22 +1,41 @@
-require('dotenv').config();
-const admin = require('firebase-admin');
-const serviceAccount = require('../firebase-service-account-key.json'); // Ensure the path is correct
-
-// Initialize Firebase Admin SDK if not already initialized
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-  });
-}
-
 const { sendWeeklyEmails } = require('../utils/weeklyEmailJob');
+const { sendEmail } = require('../services/sendGridService');
+const admin = require('firebase-admin');
 
-(async () => {
-  try {
-    console.log('Starting weekly email job test...');
+describe('sendWeeklyEmails', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should send weekly emails successfully', async () => {
+    admin.firestore().collection().get.mockResolvedValueOnce({
+      docs: [
+        { id: 'user1', data: () => ({ userMail: 'test@example.com', userName: 'Test User' }) },
+      ],
+    });
+
+    admin.firestore().collection().where().get.mockResolvedValueOnce({
+      docs: [
+        { data: () => ({ name: 'Project 1', completionDate: '2025-04-01' }) },
+      ],
+    });
+
     await sendWeeklyEmails();
-    console.log('Weekly email job test completed successfully.');
-  } catch (error) {
-    console.error('Error during weekly email job test:', error);
-  }
-})();
+
+    expect(sendEmail).toHaveBeenCalledTimes(1);
+    expect(sendEmail).toHaveBeenCalledWith(
+      'test@example.com',
+      'Weekly Congratulations: Completed Projects',
+      expect.any(String),
+      expect.stringContaining('<li>Project 1 - Completed on: 2025-04-01</li>')
+    );
+  });
+
+  it('should handle no users gracefully', async () => {
+    admin.firestore().collection().get.mockResolvedValueOnce({ docs: [] });
+
+    await sendWeeklyEmails();
+
+    expect(sendEmail).not.toHaveBeenCalled();
+  });
+});
