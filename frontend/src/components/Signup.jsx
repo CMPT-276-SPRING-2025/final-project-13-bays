@@ -1100,7 +1100,7 @@ const resetForgotPasswordMode = () => {
                   />
                   <label htmlFor="terms" className="text-base text-gray-600 cursor-pointer">
                     I agree to the{" "}
-                    <a href="/terms" className="text-[#FF8C6B] hover:underline cursor-pointer">
+                    <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-[#FF8C6B] hover:underline cursor-pointer">
                       Terms & Conditions
                     </a>
                   </label>
