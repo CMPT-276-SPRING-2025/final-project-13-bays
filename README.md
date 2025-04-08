@@ -26,8 +26,8 @@ __**Goal:**__ Help the user organize projects on a web browsers more convenientl
 
 ## 🛠️ Technologies & Tools
 - [Programming Languages] HTML, CSS, Javascript
-- [Frameworks] React.JS, Tailwind CSS
-- [API's] Todolist, OAuth (Backup: Calendar, Progressbar) - Recommend schedules, searches/tabs for saved windows
+- [Frameworks] Vite, React.JS, Tailwind CSS, Express
+- [API's] Firebase, Sendgrid, Chrome Tabs
 
 ## 📆 Timeline
 | Phase            | Task Description                   | Deadline              |
