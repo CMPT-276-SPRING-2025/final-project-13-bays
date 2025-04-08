@@ -1,36 +1,69 @@
-const request = require('supertest')
-const app = require('../server');
+const sgMail = require('@sendgrid/mail');
 const { sendEmail } = require('../services/sendGridService');
 
-jest.mock('@sendgrid/mail', () => ({
-    setApiKey: jest.fn(),
-    send: jest.fn(),
-}));
+jest.mock('@sendgrid/mail');
 
-describe('GET /test-email', () => {
-    // Success
-    it('should send an email and return success', async () => {
-        // Mock the sendEmail function to resolve successfully
-        sendEmail.mockResolvedValueOnce();
+describe('sendEmail', () => {
+    const mockEmailData = {
+        to: 'test@example.com',
+        subject: 'Test Subject',
+        text: 'Test plain text content',
+        html: '<p>Test HTML content</p>',
+    };
 
-        // Make a resquest to the /test-email route
-        const res = await request(app).get('/test-email');
-        
-        // Assertions
-        expect(res.statusCode).toEqual(200);
-        expect(res.text).toBe('Emails sent successfully!')
+    beforeEach(() => {
+        sgMail.send.mockClear();
+        jest.spyOn(console, 'error').mockImplementation(() => {}); // Mock console.error
     });
 
-    // Error
-    it('should handle errors when sending an email', async () => {
-        // Mock the sendEmail function to reject with an error
-        sendEmail.mockRejectedValueOnce(new Error('SendGrid Error'));
-    
-        // Make a request to the /test-email route
-        const res = await request(app).get('/test-email');
-    
-        // Assertions
-        expect(res.statusCode).toEqual(500);
-        expect(res.text).toBe('Failed to send emails');
+    afterEach(() => {
+        jest.restoreAllMocks(); // Restore original console.error after each test
     });
-})
+
+    it('should send an email successfully with plain text content', async () => {
+        sgMail.send.mockResolvedValueOnce();
+
+        await expect(
+            sendEmail(mockEmailData.to, mockEmailData.subject, mockEmailData.text)
+        ).resolves.not.toThrow();
+
+        expect(sgMail.send).toHaveBeenCalledWith({
+            to: mockEmailData.to,
+            from: 'tabmarkservices@gmail.com',
+            subject: mockEmailData.subject,
+            text: mockEmailData.text,
+        });
+    });
+
+    it('should send an email successfully with HTML content', async () => {
+        sgMail.send.mockResolvedValueOnce();
+
+        await expect(
+            sendEmail(mockEmailData.to, mockEmailData.subject, mockEmailData.text, mockEmailData.html)
+        ).resolves.not.toThrow();
+
+        expect(sgMail.send).toHaveBeenCalledWith({
+            to: mockEmailData.to,
+            from: 'tabmarkservices@gmail.com',
+            subject: mockEmailData.subject,
+            text: mockEmailData.text,
+            html: mockEmailData.html,
+        });
+    });
+
+    it('should throw an error if sending email fails', async () => {
+        const mockError = new Error('SendGrid error');
+        sgMail.send.mockRejectedValueOnce(mockError);
+
+        await expect(
+            sendEmail(mockEmailData.to, mockEmailData.subject, mockEmailData.text)
+        ).rejects.toThrow('SendGrid error');
+
+        expect(sgMail.send).toHaveBeenCalledWith({
+            to: mockEmailData.to,
+            from: 'tabmarkservices@gmail.com',
+            subject: mockEmailData.subject,
+            text: mockEmailData.text,
+        });
+    });
+});
