@@ -1,7 +1,5 @@
 require('dotenv').config();
 const express = require('express');
-const { sendDailyEmails } = require('./utils/dailyEmailJob'); // Import the daily email job
-const { sendWeeklyEmails } = require('./utils/weeklyEmailJob'); // Import the weekly email job
 
 // Initialize Firebase Admin SDK
 const admin = require('firebase-admin');
@@ -34,10 +32,6 @@ app.get('/', (req, res) => {
 // Routes
 const emailRoutes = require('./routes/emailRoutes');
 app.use('/email', emailRoutes);
-
-// Start the daily and weekly email jobs
-sendDailyEmails(); // Ensure the daily job starts when the server runs
-sendWeeklyEmails(); // Ensure the weekly job starts when the server runs
 
 // Server port
 const PORT = process.env.PORT || 5000;
