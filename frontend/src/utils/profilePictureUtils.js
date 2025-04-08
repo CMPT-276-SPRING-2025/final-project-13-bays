@@ -36,6 +36,7 @@ export const handleProfilePictureUpload = (e, setProfilePicture) => {
 
   console.log("image set")
   setProfilePicture(file);
+  uploadProfilePicture
   e.target.value = null; // Clear input value to allow re-uploads of the same file
 };
 
