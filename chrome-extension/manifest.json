@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
-    "name": "TabMark",
+    "name": "TabMark Helper",
     "version": "1.0",
-    "permissions": ["tabs", "activeTab", "storage"],
+    "permissions": ["tabs"],
     "host_permissions": ["<all_urls>"],
     "background": {
       "service_worker": "background.js"
