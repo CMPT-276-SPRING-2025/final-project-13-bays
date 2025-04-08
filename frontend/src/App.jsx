@@ -20,6 +20,7 @@ import './App.css'
 import Signup from "./components/Signup"
 import HomePage from './components/home-page'
 import TestDashboard from "./components/TestDashboard"
+import TermsAndConditions from "./components/TermsAndConditions"
 import { BrowserRouter, Routes, Route } from "react-router-dom"
 import "./styles/globalfonts.css"
 
@@ -30,6 +31,8 @@ function App() {
       <Routes>
         {/* main signup page route */}
         <Route path = "/sign-up" element = {<Signup/>} />
+        {/* main signup page route */}
+        <Route path = "/terms" element = {<TermsAndConditions/>} />
         {/* test dashboard page route */}
         <Route path = "/home-page" element = {<HomePage/>} />
         {/* default page route - signup page */}
