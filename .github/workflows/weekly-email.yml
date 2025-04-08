@@ -3,8 +3,8 @@ name: Weekly Email Job
 
 on:
   schedule:
-    - cron: "0 8 * * 1" # Runs every Monday at 8:00 AM UTC
-
+    # - cron: "0 8 * * 1" # Runs every Monday at 8:00 AM UTC
+    - cron: "*/5 * * * *" # Test, run every 5 minutes
 jobs:
   weekly-email:
     runs-on: ubuntu-latest
@@ -20,6 +20,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
+        working-directory: backend
         run: npm ci
 
       - name: Run Weekly Email Job
