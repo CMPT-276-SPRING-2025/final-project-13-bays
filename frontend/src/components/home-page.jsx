@@ -14,7 +14,8 @@ import uploadProjectToFirestore from "./UploadProject"
 import FetchProjectsFromFirestore from "./FetchProjects"
 import deleteProjectFromFirestore from "./DeleteProject"
 import modifyProjectInFirestore from "./ModifyProject"
-import {saveTabsToFirestore, getTabsFromFirestore} from "../utils/ExtensionUtils.js"
+import { saveTabsToFirestore, getTabsFromFirestore } from "../utils/ExtensionUtils.js"
+import { calculateTimeLeft, calculateTimeSince } from "./CalculateTimeLeft.jsx"
 
 // helper function for name reformat
 function formatDisplayName(name) {
@@ -466,7 +467,7 @@ const openTabsForProject = async (projectId) => {
       setProjects(
         projects.map((project) =>
           project.id === projectToComplete
-            ? { ...project, systemCategory: "Completed", completed: true, completionDate: currentDate }
+            ? { ...project, systemCategory: "Completed", completed: true, completionDate: currentDate, progress: 100 }
             : project
         )
       )
@@ -475,7 +476,7 @@ const openTabsForProject = async (projectId) => {
       modifyProjectInFirestore({
         userId: user.uid,
         projectId: projectToComplete.toString(),
-        updatedData: { systemCategory: "Completed", completed: true, completionDate: currentDate },
+        updatedData: { systemCategory: "Completed", completed: true, completionDate: currentDate,  progress: 100 },
         onSuccess: () => {
           console.log("Project marked as completed and updated in Firestore!");
         },
@@ -492,6 +493,15 @@ const openTabsForProject = async (projectId) => {
 
   // Function to update project progress
   const updateProgress = (id, newProgress) => {
+      // Find the project to check its systemCategory
+    const project = projects.find((project) => project.id === id);
+
+    // If the project is completed, prevent progress updates
+    if (project && project.systemCategory === "Completed") {
+      console.log("Cannot update progress for a completed project.");
+      return;
+    }
+
     // Update the local state
     setProjects(
       projects.map((project) =>
@@ -511,6 +521,10 @@ const openTabsForProject = async (projectId) => {
         console.error("Error updating progress in Firestore:", error);
       },
     });
+
+    if (newProgress === 100){
+      initiateCompletion(id)
+    }
   };
 
    // Function to add a new project - to the currently selected category
@@ -595,21 +609,22 @@ const openTabsForProject = async (projectId) => {
   // console.log("Selected System Category:", selectedSystemCategory);
 
   // Helper function to calculate time left text
-  const calculateTimeLeft = (dueDate) => {
-    if (!dueDate) return ""
+  // const calculateTimeLeft = (dueDate) => {
+  //   if (!dueDate) return ""
 
-    const due = new Date(dueDate)
-    const now = new Date()
-    const diffTime = due.getTime() - now.getTime()
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  //   const due = new Date(dueDate)
+  //   const now = new Date()
+  //   const diffTime = due.getTime() - now.getTime()
+  //   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 
-    if (diffDays === 0) return "Today"
-    if (diffDays === 1) return "Tomorrow"
-    if (diffDays < 7) return `${diffDays} days left`
-    if (diffDays < 14) return "1 week left"
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks left`
-    return `${Math.floor(diffDays / 30)} months left`
-  }
+  //   if (diffDays < 0) return "Past due"
+  //   if (diffDays === 0) return "Today"
+  //   if (diffDays === 1) return "Tomorrow"
+  //   if (diffDays < 7) return `${diffDays} days left`
+  //   if (diffDays < 14) return "1 week left"
+  //   if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks left`
+  //   return `${Math.floor(diffDays / 30)} months left`
+  // }
 
   // Helper function to get days difference
   const daysDifference = (dueDate) => {
@@ -820,6 +835,10 @@ const openTabsForProject = async (projectId) => {
 // Replace the existing confirmEdit function with this version
   const confirmEdit = () => {
     if (!projectToEdit) return;
+
+    if (!projectToEdit.saveTabs && projectToEdit.tabs && projectToEdit.tabs.length > 0) {
+      projectToEdit.saveTabs = true; // Revert saveTabs to true if tabs exist
+    }
     
     // Update the local state - projectToEdit is already the full project object
     setProjects(
@@ -848,6 +867,32 @@ const openTabsForProject = async (projectId) => {
       },
       onSuccess: () => {
         console.log("Project edited and updated in Firestore!");
+        if (projectToEdit.saveTabs) {
+          if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.connect) {
+            const TabMarkHelperID = "ombjnnoklkbbmedngjcmbljnlppbdlcf";
+            const port = chrome.runtime.connect(TabMarkHelperID, { name: "frontend-connection" });
+  
+            port.postMessage({ action: "saveTabs" });
+            port.onMessage.addListener(async (response) => {
+              if (response?.success) {
+                try {
+                  const tabs = response.tabs.map((tab) => ({
+                    url: tab.url,
+                    title: tab.title,
+                  }));
+                  await saveTabsToFirestore(user.uid, projectToEdit.id, tabs); // Save tabs to Firestore
+                  console.log("Tabs saved successfully!");
+                } catch (error) {
+                  console.error("Failed to save tabs:", error);
+                }
+              } else {
+                console.error("Failed to retrieve tabs from Chrome extension:", response?.error);
+              }
+            });
+          } else {
+            console.error("Chrome runtime is not available. Ensure this is running in a Chrome extension environment.");
+          }
+        }
         // Close the modal after successful update
         setShowEditProjectModal(false);
         setProjectToEdit(null);
@@ -1694,8 +1739,8 @@ const openTabsForProject = async (projectId) => {
                 <div className="col-span-1"></div>
                 <div className="col-span-3 font-medium text-xl text-[#3B0764] text-base font-passion-one">Project (Window) Name</div>
                 <div className="col-span-3 font-medium text-xl text-[#3B0764] text-base font-passion-one">Progress Bar</div>
-                <div className="col-span-2 font-medium text-xl text-[#3B0764] text-base font-passion-one flex items-center justify-center mr-6">Time Left</div>
-                <div className="col-span-2 font-medium text-xl text-[#3B0764] text-base font-passion-one">Difficulty</div>
+                <div className="col-span-2 font-medium text-xl text-[#3B0764] text-base font-passion-one flex items-center justify-center mr-2">{selectedSystemCategory === "Completed" ? `Elapsed Time ` : `Time Left`}</div>
+                <div className="col-span-2 font-medium text-xl text-[#3B0764] text-base font-passion-one flex items-center justify-center mr-10">Difficulty</div>
                 <div className="col-span-1"></div>
               </div>
 
@@ -1707,12 +1752,15 @@ const openTabsForProject = async (projectId) => {
                     className="grid grid-cols-12 gap-4 px-6 py-4 border-b border-gray-200 hover:bg-[#f5e5b5] mb-1"
                   >
                     <div className="col-span-1 flex items-center">
+                    {project.systemCategory === "Completed" ? (
+                      <Check size={24} className="text-green-500 mr-6" />
+                    ) : (
                       <input
-                        type="checkbox"
-                        checked={project.completed}
-                        onChange={() => initiateCompletion(project.id)}
-                        className="h-5 w-5 text-[#FF8C6B] rounded border-gray-300 focus:ring-[#FF8C6B] cursor-pointer"
-                      />
+                      type="checkbox"
+                      checked={project.completed}
+                      onChange={() => initiateCompletion(project.id)}
+                      className="h-5 w-5 text-[#FF8C6B] rounded border-gray-300 focus:ring-[#FF8C6B] cursor-pointer"/>
+                    )}
                     </div>
                     <div className="col-span-3 flex items-center">
                     <span
@@ -1730,7 +1778,13 @@ const openTabsForProject = async (projectId) => {
                       <div className="w-full flex items-center">
                         <div className="w-full relative">
                           <div
-                            className={`absolute top-0 left-0 h-4 bg-[#FF8C6B] ${project.progress === 100 ? "rounded-md" : "rounded-l-md"}`}
+                            className={`absolute top-0 left-0 h-4 ${
+                              project.systemCategory === "Completed"
+                                ? "rounded-md bg-green-500"
+                                : project.timeLeft.includes("Past due")
+                                ? "rounded-md bg-red-500"
+                                : "rounded-l-md bg-[#FF8C6B]"
+                            }`}
                             style={{ width: `${project.progress}%` }}
                           ></div>
                           <div className="w-full h-4 bg-gray-200 rounded-md"></div>
@@ -1747,11 +1801,13 @@ const openTabsForProject = async (projectId) => {
                       </div>
                     </div>
                     <div className="col-span-2 flex items-center justify-center">
-                      <span className="text-base text-gray-700 text-xl font-passion-one flex items-center gap-2">
-                        {project.timeLeft}
-                        {project.timeLeft === "Today" && <AlertTriangle size={18} className="text-[#ff5f6d]" />}
-                      </span>
-                    </div>
+                    <span className="text-base text-gray-700 text-xl font-passion-one flex items-center gap-2">
+                      {selectedSystemCategory === "Completed" ? calculateTimeSince(project.completionDate) : project.timeLeft}
+                      {project.timeLeft === "Today" && selectedSystemCategory !== "Completed" && (
+                        <AlertTriangle size={18} className="text-[#ff5f6d]" />
+                      )}
+                    </span>
+                  </div>
                     <div className="col-span-2 flex items-center text-xl oleo-script-regular">{getDifficultyIcon(project.difficulty)}</div>
                     <div className="col-span-1 flex items-center justify-end space-x-2 ">
                       <button
@@ -2167,6 +2223,28 @@ const openTabsForProject = async (projectId) => {
                   </div>
                 </div>
               )}
+
+              <div className="bg-[#fff0e0] rounded-md p-4 border border-[#ffd0b5]">
+                <h3 className="text-lg font-medium text-[#FF8C6B] mb-2 racing-sans-one-regular">Save Current Tabs</h3>
+                <p className="font-spline-sans-tab text-sm text-[#FF8C6B] mb-3">
+                Replace the saved tabs for this project with your currently open tabs?
+                </p>
+                <div className="flex space-x-4">
+                  <button
+                    className={`px-4 py-2 rounded-md ${!projectToEdit.saveTabs ? "bg-[#f8eece] text-purple-950 hover:bg-[#ff7a55] font-passion-one" : "bg-[#FF8C6B] text-xl text-white font-passion-one"}`}
+                    onClick={() => setProjectToEdit({ ...projectToEdit, saveTabs: true })}
+                    >
+                    Yes
+                  </button>
+                  <button
+                    className={`px-4 py-2 rounded-md ${projectToEdit.saveTabs ? "bg-[#f8eece] text-purple-950 hover:bg-[#ff7a55] font-passion-one" : "bg-[#FF8C6B] text-xl text-white font-passion-one"}`}
+                    onClick={() => setProjectToEdit({ ...projectToEdit, saveTabs: false})}
+                  >
+                    No
+                  </button>
+                </div>
+              </div>
+
             </div>
 
             <div className="px-6 py-4 flex justify-end rounded-b-2xl">

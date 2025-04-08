@@ -29,7 +29,7 @@ export default function FetchProjectsFromFirestore({ userId, onProjectsFetched }
             // Determine the category based on timeLeft and archived
             let systemCategory = project.systemCategory; // Default category
             if (project.systemCategory !== "Completed") {
-              if (timeLeft === "Today" || timeLeft === "Tomorrow" || timeLeft.includes("days left")) {
+              if (timeLeft === "Today" || timeLeft === "Tomorrow" || timeLeft.includes("Past due") || timeLeft.includes("days left")) {
                 systemCategory = "Urgent";
               } else if (timeLeft === "1 week left" || timeLeft.includes("weeks left") ) {
                 systemCategory = "Upcoming";
