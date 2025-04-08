@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tabmark Helper</title>
+    <link href="https://fonts.googleapis.com/css2?family=Jomhuria&family=Racing+Sans+One&display=swap" rel="stylesheet">
+    <style>
+        /* General styles for the popup */
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 250px; /* Smaller width */
+            height: 350px; /* Smaller height */
+            overflow: hidden; /* Prevent scrolling */
+            font-family: Arial, sans-serif;
+            background-color: #ff9980; /* Coral/orange background */
+            color: #f8eece; /* Light cream color for text */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        /* Container for content */
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Logo styles */
+        .logo {
+            width: 60px; /* Smaller logo */
+            height: 60px;
+            margin-bottom: 15px;
+        }
+
+        /* Title styles */
+        h1 {
+            font-size: 42px; /* Smaller font size */
+            margin: 5px 0;
+            font-weight: bold;
+            font-family: 'Jomhuria', cursive;
+            letter-spacing: 1px; /* Correct CSS for tracking */
+        }
+
+        /* Tagline styles */
+        .tagline {
+            font-size: 18px; /* Smaller font size */
+            font-style: italic;
+            margin: 5px 0;
+            font-family: "Racing Sans One", sans-serif;
+            font-weight: 400;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Logo -->
+        <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/bookmark-64%281%29-caVEaypHq7HypkUQUhgXo9jXEtcCaE.png" alt="Tabmark Helper Logo" class="logo">
+        
+        <!-- Title -->
+        <h1>Tabmark Helper</h1>
+        
+        <!-- Tagline -->
+        <p class="tagline">'Bookmarks But Smarter'</p>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>

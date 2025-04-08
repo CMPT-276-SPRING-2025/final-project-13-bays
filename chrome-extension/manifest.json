@@ -1,0 +1,21 @@
+{
+    "manifest_version": 3,
+    "name": "TabMark",
+    "version": "1.0",
+    "permissions": ["tabs", "activeTab", "storage"],
+    "host_permissions": ["<all_urls>"],
+    "background": {
+      "service_worker": "background.js"
+    },
+    "action": {
+      "default_popup": "./popup/popup.html",
+      "default_icon": {
+        "16": "./icons/bookmark-64.png",
+        "48": "./icons/bookmark-64.png",
+        "128": "./icons/bookmark-64.png"
+        }
+    },
+    "externally_connectable": {
+      "matches": ["http://localhost:5173/*", "https://tabmark-d081a.web.app/*"]
+    }
+  }
