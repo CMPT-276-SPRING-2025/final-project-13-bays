@@ -35,9 +35,9 @@ app.get('/', (req, res) => {
 const emailRoutes = require('./routes/emailRoutes');
 app.use('/email', emailRoutes);
 
-// Start the daily and weekly email jobs
-sendDailyEmails(); // Ensure the daily job starts when the server runs
-sendWeeklyEmails(); // Ensure the weekly job starts when the server runs
+// // npm start (use for maunal testing to see if emails are actually sent)
+// sendDailyEmails(); // Ensure the daily job starts when the server runs
+// sendWeeklyEmails(); // Ensure the weekly job starts when the server runs
 
 // Server port
 const PORT = process.env.PORT || 5000;
