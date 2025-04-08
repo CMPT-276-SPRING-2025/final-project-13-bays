@@ -8,7 +8,7 @@
 **TabMark**
 
 ## 📖 Project Description
-Tabmark organizes and saves the tabs of the user's choice. The user can get back on track of their project with ease. The website also reminds of the upcoming deadlines, preventing procrastination. Further, the secondary feature is an AI-driven schedule that first gives a user a survey, to detail the current commitments of a person, e.g. courses, other work priorities as well as fitness goals, encompassing a productive life roadmap.
+Tabmark organizes and saves the tabs of the user's choice. The user can get back on track of their project with ease. The website also reminds of the upcoming deadlines, preventing procrastination. Further, there is also a calender view for user to plan their projects ahead more easier.
 
 ## Features
 1. Users are able to do native account creation, as well as, authentication with third-party providers
