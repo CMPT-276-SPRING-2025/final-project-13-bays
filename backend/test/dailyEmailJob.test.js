@@ -13,6 +13,7 @@ jest.mock('firebase-admin', () => {
     initializeApp: jest.fn(),
     credential: { cert: jest.fn() },
     firestore: jest.fn(() => firestoreMock),
+    apps: [{}], // Mock the apps array
   };
 });
 
@@ -27,7 +28,6 @@ describe('sendWeeklyEmails', () => {
   });
 
   it('should send weekly emails successfully', async () => {
-    // Mock Firestore data
     const mockUsers = [
       { id: 'user1', data: () => ({ userMail: 'test1@example.com', userName: 'User1' }) },
     ];
@@ -38,10 +38,8 @@ describe('sendWeeklyEmails', () => {
     admin.firestore().collection().get.mockResolvedValueOnce({ docs: mockUsers });
     admin.firestore().collection().where().get.mockResolvedValueOnce({ docs: mockProjects });
 
-    // Call the function
     await sendWeeklyEmails();
 
-    // Assertions
     expect(sendEmail).toHaveBeenCalledTimes(1);
     expect(sendEmail).toHaveBeenCalledWith(
       'test1@example.com',
