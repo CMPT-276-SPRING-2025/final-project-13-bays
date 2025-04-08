@@ -11,9 +11,10 @@ import {Trash2, Menu, PlusCircle, AlertTriangle, X, Calendar, Clock,
   Check, Plus, Briefcase, User, Book, Search, Heart, Leaf, Eye, EyeClosed , ChevronLeft, ChevronRight, Flower, Sun, Snowflake, DoorClosed, DoorOpen, } from "lucide-react"
 import "../styles/globalfonts.css"
 import uploadProjectToFirestore from "./UploadProject"
-import FetchProjectsFromFirestore from "./FetchProjects";
-import deleteProjectFromFirestore from "./DeleteProject";
-import modifyProjectInFirestore from "./ModifyProject";
+import FetchProjectsFromFirestore from "./FetchProjects"
+import deleteProjectFromFirestore from "./DeleteProject"
+import modifyProjectInFirestore from "./ModifyProject"
+import {saveTabsToFirestore, getTabsFromFirestore} from "../utils/ExtensionUtils.js"
 
 // helper function for name reformat
 function formatFullName(name) {
@@ -172,6 +173,72 @@ export default function HomePage() {
 
   // State for user category projects
   const [userCategoryProjects, setUserCategoryProjects] = useState({})
+
+//   const saveTabsForProject = (projectId) => {
+//     chrome.runtime.sendMessage({ action: "saveTabs", projectId }, (response) => {
+//       if (response.success) {
+//         console.log("Tabs saved successfully!");
+//       } else {
+//         console.error("Failed to save tabs:", response.error);
+//       }
+//     });
+//   };
+
+//   const openTabsForProject = (projectId) => {
+//     chrome.runtime.sendMessage({ action: "openTabs", projectId }, (response) => {
+//       if (response.success) {
+//         console.log("Tabs opened successfully!");
+//       } else {
+//         console.error("Failed to open tabs:", response.error);
+//       }
+//     });
+//   };
+
+//   import saveTabsToFirestore from "../utils/saveTabsToFirestore";
+// import getTabsFromFirestore from "../utils/getTabsFromFirestore";
+
+const saveTabsForProject = (projectId) => {
+  chrome.runtime.sendMessage({ action: "saveTabs" }, async (response) => {
+    if (response.success) {
+      try {
+        const tabs = response.tabs.map((tab) => ({ url: tab.url, title: tab.title }));
+        await saveTabsToFirestore(user.uid, projectId, tabs);
+        console.log("Tabs saved successfully!");
+      } catch (error) {
+        console.error("Failed to save tabs:", error);
+      }
+    } else {
+      console.error("Failed to retrieve tabs from Chrome extension:", response.error);
+    }
+  });
+};
+
+const openTabsForProject = async (projectId) => {
+  try {
+    const tabs = await getTabsFromFirestore(user.uid, projectId);
+    const urls = tabs.map((tab) => tab.url);
+
+    console.log("URLs being sent to extension:", urls); // Debugging log
+
+    if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.connect) {
+      const TabMarkHelperID = "ombjnnoklkbbmedngjcmbljnlppbdlcf";
+      const port = chrome.runtime.connect(TabMarkHelperID, { name: "frontend-connection" });
+
+      port.postMessage({ action: "openTabs", urls });
+      port.onMessage.addListener( (response) => {
+        if (response?.success) {
+          console.log("Tabs opened successfully!");
+        } else {
+          console.error("Failed to open tabs:", response?.error);
+        }
+      });
+    } else {
+      console.error("Chrome runtime is not available. Ensure this is running in a Chrome extension environment.");
+    }
+  } catch (error) {
+    console.error("Failed to retrieve tabs:", error);
+  }
+};
 
   // Function to determine system category based on due date
   const determineSystemCategory = (dueDate) => {
@@ -404,7 +471,7 @@ export default function HomePage() {
       setProjects(
         projects.map((project) =>
           project.id === projectToComplete
-            ? { ...project, category: "Completed", completed: true }
+            ? { ...project, systemCategory: "Completed", completed: true }
             : project
         )
       );
@@ -473,6 +540,8 @@ export default function HomePage() {
       difficulty: newProject.difficulty,
       systemCategory: "Default", // Use the currently selected category
       completed: false,
+      saveTabs: true,
+      tabs: []
     };
   
     // Add the project to the local state
@@ -485,6 +554,31 @@ export default function HomePage() {
       projectData,
       onSuccess: () => {
         console.log("Project uploaded successfully!");
+  
+        // If saveTabs is true, save the tabs to Firestore
+        if (newProject.saveTabs) {
+          if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.connect) {
+            const TabMarkHelperID = "ombjnnoklkbbmedngjcmbljnlppbdlcf";
+            const port = chrome.runtime.connect(TabMarkHelperID, { name: "frontend-connection" });
+  
+            port.postMessage({ action: "saveTabs" });
+            port.onMessage.addListener(async (response) => {
+              if (response?.success) {
+                try {
+                  const tabs = response.tabs.map((tab) => ({ url: tab.url, title: tab.title }))
+                  await saveTabsToFirestore(user.uid, newId, tabs); // Save tabs to Firestore
+                  console.log("Tabs saved successfully!");
+                } catch (error) {
+                  console.error("Failed to save tabs:", error);
+                }
+              } else {
+                console.error("Failed to retrieve tabs from Chrome extension:", response?.error);
+              }
+            });
+          } else {
+            console.error("Chrome runtime is not available. Ensure this is running in a Chrome extension environment.");
+          }
+        }
       },
       onError: (error) => {
         console.error("Error uploading project:", error);
@@ -497,10 +591,10 @@ export default function HomePage() {
       dueDate: today,
       difficulty: "Easy",
       saveTabs: true,
-      userCategory: null,
-    })
-    setShowNewProjectModal(false)
-  }
+      Category: null,
+    });
+    setShowNewProjectModal(false);
+  };
 
   // console.log("Selected System Category:", selectedSystemCategory);
 
@@ -1625,12 +1719,16 @@ export default function HomePage() {
                       />
                     </div>
                     <div className="col-span-3 flex items-center">
-                      <span
-                        className={`text-base font-medium text-xl font-abril-fatface ${project.completed ? "text-gray-400 line-through" : "text-[#FF8C6B]"}`}
-                      >
-                        {project.name}
-                      </span>
-                    </div>
+                    <span
+                      className={`text-base font-medium text-xl font-abril-fatface cursor-pointer ${
+                        project.completed ? "text-gray-400 line-through" : "text-[#FF8C6B]"
+                      }`}
+                      onClick={() => openTabsForProject(project.id)}
+                      title="Click to open saved tabs for this project"
+                    >
+                      {project.name}
+                    </span>
+                  </div>
                     <div className="col-span-3 flex items-center">
                       {/* Custom progress slider with rounded corners when at 100% */}
                       <div className="w-full flex items-center">
@@ -1879,7 +1977,7 @@ export default function HomePage() {
                   <button
                     className={`px-4 py-2 rounded-md ${newProject.saveTabs ? "bg-[#FF8C6B] text-white hover:bg-[#ff7a55] font-passion-one" : "bg-gray-200 text-purple-950 font-passion-one"}`}
                     onClick={() => setNewProject({ ...newProject, saveTabs: true })}
-                  >
+                    >
                     Yes
                   </button>
                   <button
