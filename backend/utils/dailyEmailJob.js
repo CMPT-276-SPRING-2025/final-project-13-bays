@@ -1,6 +1,5 @@
 const admin = require('firebase-admin');
 const { getFirestore } = require('firebase-admin/firestore');
-const cron = require('node-cron');
 const { sendEmail } = require('../services/sendGridService');
 
 // Initialize Firebase Admin SDK if not already initialized
@@ -23,9 +22,6 @@ if (!admin.apps.length) {
 
 const db = getFirestore();
 
-/**
- * Fetches users and their "Urgent" projects, and sends daily emails.
- */
 const sendDailyEmails = async () => {
   try {
     const usersSnapshot = await db.collection('projects').get();
@@ -35,12 +31,12 @@ const sendDailyEmails = async () => {
       const userEmail = userData.userMail;
       const userName = userData.userName;
 
-      if (!userEmail) continue; // Skip if no email is found
+      if (!userEmail) continue;
 
       const projectsRef = db.collection(`projects/${userDoc.id}/userProjects`);
       const urgentProjectsSnapshot = await projectsRef.where('systemCategory', '==', 'Urgent').get();
 
-      if (urgentProjectsSnapshot.empty) continue; // Skip if no "Urgent" projects
+      if (urgentProjectsSnapshot.empty) continue;
 
       const projectList = urgentProjectsSnapshot.docs
         .map((doc) => `<li>${doc.data().name} - Due: ${doc.data().dueDate}</li>`)
@@ -66,10 +62,5 @@ const sendDailyEmails = async () => {
     console.error('Error sending daily emails:', error);
   }
 };
-
-// Schedule the job to run daily at 8:00 AM
-cron.schedule('0 8 * * *', sendDailyEmails, {
-  timezone: 'America/Los_Angeles',
-});
 
 module.exports = { sendDailyEmails };

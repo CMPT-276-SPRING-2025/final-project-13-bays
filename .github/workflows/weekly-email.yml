@@ -1,0 +1,26 @@
+# This workflow will send the weekly email
+name: Weekly Email Job
+
+on:
+  schedule:
+    - cron: "0 8 * * 1" # Runs every Monday at 8:00 AM UTC
+
+jobs:
+  weekly-email:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Weekly Email Job
+        run: node backend/utils/weeklyEmailJob.js

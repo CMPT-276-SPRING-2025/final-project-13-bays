@@ -1,6 +1,5 @@
 const admin = require('firebase-admin');
 const { getFirestore } = require('firebase-admin/firestore');
-const cron = require('node-cron');
 const { sendEmail } = require('../services/sendGridService');
 
 // Initialize Firebase Admin SDK if not already initialized
@@ -23,9 +22,6 @@ if (!admin.apps.length) {
 
 const db = getFirestore();
 
-/**
- * Fetches users and their "Completed" projects completed within the last week, and sends weekly emails.
- */
 const sendWeeklyEmails = async () => {
   try {
     const usersSnapshot = await db.collection('projects').get();
@@ -35,7 +31,7 @@ const sendWeeklyEmails = async () => {
       const userEmail = userData.userMail;
       const userName = userData.userName;
 
-      if (!userEmail) continue; // Skip if no email is found
+      if (!userEmail) continue;
 
       const projectsRef = db.collection(`projects/${userDoc.id}/userProjects`);
       const completedProjectsSnapshot = await projectsRef.where('systemCategory', '==', 'Completed').get();
@@ -49,12 +45,10 @@ const sendWeeklyEmails = async () => {
           if (!project.completionDate) return false;
 
           const completionDate = new Date(project.completionDate);
-          if (isNaN(completionDate)) return false;
-
           return completionDate >= oneWeekAgo && completionDate <= new Date();
         });
 
-      if (recentCompletedProjects.length === 0) continue; // Skip if no recent completed projects
+      if (recentCompletedProjects.length === 0) continue;
 
       const projectList = recentCompletedProjects
         .map((project) => `<li>${project.name} - Completed on: ${project.completionDate}</li>`)
@@ -80,10 +74,5 @@ const sendWeeklyEmails = async () => {
     console.error('Error sending weekly emails:', error);
   }
 };
-
-// Schedule the job to run every Monday at 8:00 AM
-cron.schedule('0 8 * * 1', sendWeeklyEmails, {
-  timezone: 'America/Los_Angeles',
-});
 
 module.exports = { sendWeeklyEmails };
