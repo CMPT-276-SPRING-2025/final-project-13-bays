@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+
 import {
   GoogleAuthProvider,
   GithubAuthProvider,
@@ -15,12 +16,23 @@ import {
   sendPasswordResetEmail,
   signInWithEmailLink
 } from "firebase/auth"
+
+// import {
+//   ref,
+//   uploadBytes,
+//   getDownloadURL,
+//   uploadBytesResumable
+// } from "firebase/storage"
+
+import { handleProfilePictureUpload, uploadProfilePicture } from "../utils/profilePictureUtils.js"
 import { auth } from "../firebase-config.js"
+import { storage } from "../firebase-config.js"
 // import { getStorage, ref, upload}
 import { useNavigate } from "react-router-dom"      
 import Swal from 'sweetalert2'// for really cool custom alerts - default were drab
 import { ToastContainer, toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
+import "../styles/globalfonts.css"
 
 // note : new imports always mess up prev dependencies/imports - have to look into this
 
@@ -42,6 +54,33 @@ export default function Signup() {
     try {
       const result = await signInWithPopup(auth, provider)
       const user = result.user
+
+          //  check if existing sign-in methods exist for the email
+      const signInMethods = await fetchSignInMethodsForEmail(auth, user.email);
+      console.log(signInMethods)
+      if (signInMethods.length > 0 && !signInMethods.includes("google.com")) {
+        // if the email is associated with a different sign-in method
+        toast.error(
+          `An account with the email ${user.email} already exists. Please log in using ${signInMethods[0]}.`,
+          {
+            position: "top-center",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "font-passion-one text-xl",
+            style: { backgroundColor: "#f44336", color: "white" },
+          }
+        );
+
+        // Sign out the user to prevent them from being logged in
+        await auth.signOut();
+        console.log("User has existing account")
+        return;
+      }
+      
       console.log("User loggin in:", user.displayName)
       toast.success("Successfully logged in.", {
         position: "top-center",
@@ -52,7 +91,7 @@ export default function Signup() {
         draggable: true,
         progress: undefined,
         className: "font-passion-one text-xl",
-        onClose: () => navigate("/dashboard")
+        onClose: () => navigate("/home-page")
       })
     } catch (error) {
       console.error("Error logging in with Google:", error.message)
@@ -109,10 +148,10 @@ export default function Signup() {
         draggable: true,
         progress: undefined,
         className: "font-passion-one text-xl",
-        onClose: () => navigate("/dashboard")
+        onClose: () => navigate("/home-page")
       })
       
-      navigate("/dashboard");
+      navigate("/home-page");
     } catch (error) {
       console.error("GitHub auth error code:", error.code);
       
@@ -120,7 +159,7 @@ export default function Signup() {
         // Extract the email from the error
         const email = error.customData?.email;
         if (email) {
-          toast.error("An account already exists with the email ${email}. Please sign in using that method first.", {
+          toast.error(`An account already exists with the email ${email}.`, {
             position: "top-center",
             autoClose: 3000,
             hideProgressBar: false,
@@ -161,51 +200,57 @@ export default function Signup() {
     }
   };
 
-  const validateInputs = () => {             // validates email and password
+  const validateInputs = (context) => {             // validates email and password
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/   // regex pattern to validate email
     if (!emailRegex.test(email)){
       setError("Invalid email format. Try again.")
-      toast.error("Invalid email format. Try again.", {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        className: "font-passion-one text-xl",
-        style: { backgroundColor: "#f44336", color: "white" }
-      })
+      if (context == "signup"){
+        toast.error("Invalid email format. Try again.", {
+          position: "top-center",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "font-passion-one text-xl",
+          style: { backgroundColor: "#f44336", color: "white" }
+        })
+      }
       return false
     }
     if(password.length < 8){
       setError("Password must be minimum 8 characters long. Try again.")
-      toast.error("Password must be minimum 8 characters long. Try again.", {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        className: "font-passion-one text-xl",
-        style: { backgroundColor: "#f44336", color: "white" }
-      })
+      if (context == "signup"){
+        toast.error("Password must be minimum 8 characters long. Try again.", {
+          position: "top-center",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "font-passion-one text-xl",
+          style: { backgroundColor: "#f44336", color: "white" }
+        })
+      }
       return false
     }
     if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)){  // experimental
       setError("Password must contain an uppercase, lowercase and a number.")
-      toast.error("Password must contain an uppercase, lowercase and a number.", {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        className: "font-passion-one text-xl",
-        style: { backgroundColor: "#f44336", color: "white" }
-      })
+      if (context == "signup"){
+        toast.error("Password must contain an uppercase, lowercase and a number.", {
+          position: "top-center",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "font-passion-one text-xl",
+          style: { backgroundColor: "#f44336", color: "white" }
+        })
+      }
       return false
     }
     return true
@@ -216,7 +261,7 @@ export default function Signup() {
     console.log("Signup form submitted");
     setError("")
 
-    if (!validateInputs()) {
+    if (!validateInputs("signup")) {  // calling in signup mode, so more extensive error messsages
       console.log("Validation failed")
       return
     }
@@ -239,7 +284,9 @@ export default function Signup() {
 
     try{  // check for if account with email already exists
       const methods = await fetchSignInMethodsForEmail(auth, email)
+      console.log("log check")
       if (methods.length > 0){
+        console.log("log check 2")
         setError("An account with this email already exists. Please log in")
         toast.error("An account with this email already exists. Please log in", {
           position: "top-center",
@@ -258,10 +305,45 @@ export default function Signup() {
 
       const userCredential = await createUserWithEmailAndPassword(auth, email, password)
       const user = userCredential.user
+      
+  
       console.log("User created:", user)
+
+      let photoURL = null
+      if (profilePicture){
+        try{
+          toast.info("Uploading profile picture...", {
+            position: "top-center",
+            autoClose: false,
+            hideProgressBar: false,
+            closeOnClick: false,
+            pauseOnHover: true,
+            draggable: false,
+            progress: undefined,
+            className: "font-passion-one text-xl",
+          })
+          photoURL = await uploadProfilePicture(user.uid, profilePicture, storage)
+          toast.dismiss()
+        } catch ( uploadError ){
+          console.error("Profile picture upload failed:", uploadError);
+          toast.error("Profile picture upload failed, but account was created", {
+            position: "top-center",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "font-passion-one text-xl",
+            style: { backgroundColor: "#f44336", color: "white" }
+          })
+        }
+      }
+
 
       await updateProfile(user, {
         displayName: `${firstName} ${lastName}`,
+        photoURL: photoURL,
       });
 
       await sendEmailVerification(user)
@@ -276,7 +358,9 @@ export default function Signup() {
         progress: undefined,
         className: "font-passion-one text-xl",
       })
+
       await auth.signOut()
+
 
     } catch (error){
       console.error("Error creating account:", error.message)
@@ -300,8 +384,19 @@ export default function Signup() {
     console.log("Login form submitted")
     setError("")
 
-    if (!validateInputs()) {
-      console.log("Validation failed")
+    if (!validateInputs("login")) {
+      console.log("Input validation failed")
+      toast.error("Input validation failed. Try again.", {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "font-passion-one text-xl",
+        style: { backgroundColor: "#f44336", color: "white" }
+      })
       return
     }
 
@@ -337,7 +432,7 @@ export default function Signup() {
         draggable: true,
         progress: undefined,
         className: "font-passion-one text-xl",
-        onClose: () => navigate("/dashboard")
+        onClose: () => navigate("/home-page")
       })
     } catch(error){
       console.error("Error loggin in::", error.message)
@@ -356,13 +451,78 @@ export default function Signup() {
     }
   }
 
-const handleProfilePictureUpload = (e) => {
-  const file = e.target.files[0]
-  if(file){
-    setProfilePicture(file)
-    e.target.value = null       // clears input value to allow re-uploads of same file
-  }
-}
+// const handleProfilePictureUpload = (e) => {
+//   const file = e.target.files[0]
+//   if(!file){
+//     return
+//   }
+
+//   if (!file.type.match('image.*')){
+//     setError("Pleast select an image file")
+//     toast.error("Please select an image file", {
+//       position: "top-center",
+//       autoClose: 3000,
+//       hideProgressBar: false,
+//       closeOnClick: true,
+//       pauseOnHover: true,
+//       draggable: true,
+//       progress: undefined,
+//       className: "font-passion-one text-xl",
+//       style: { backgroundColor: "#f44336", color: "white" }
+//     })
+//     return
+//   }
+
+//   if (!file.size > (10 * 1024 * 1024)){   // bigger than 10 MB
+//     setError("Profile picture must be less than 10MB")
+//     toast.error("Profile picture must be less than 10MB", {
+//       position: "top-center",
+//       autoClose: 3000,
+//       hideProgressBar: false,
+//       closeOnClick: true,
+//       pauseOnHover: true,
+//       draggable: true,
+//       progress: undefined,
+//       className: "font-passion-one text-xl",
+//       style: { backgroundColor: "#f44336", color: "white" }
+//     })
+//     return
+//   }
+
+//   setProfilePicture(file)
+//   e.target.value = null       // clears input value to allow re-uploads of same file
+// }
+
+// const uploadProfilePicture = async (userId, file) => {
+//   if (!file){
+//     return null
+//   }
+
+//   // creates storage reference
+//   const storageRef = ref(storage, `profileImages/${userId}/${Date.now()}-${file.name}`)
+//   // simply references a particular custom directory and file path name in the storage
+//   const uploadTask = uploadBytesResumable(storageRef, file)
+//   // uploads the file in question, i.e image hre, to that file path
+
+//   return new Promise((resolve, reject) =>{
+//     uploadTask.on(
+//       "state_change",
+//       (snapshot) => {
+//         const progress = (snapshot.bytesTransferred/snapshot.totalBytes)
+//         console.log(`Upload progress: ${progress.toFixed(2)}`)
+//       },
+//       (error) => {
+//         console.error("Upload failed:", erorr)
+//         reject(error)
+//       },
+//       async() => {
+//         const downloadURL = await getDownloadURL(uploadTask.snapshot.ref)
+//         console.log("File available at:", downloadURL)
+//         resolve(downloadURL)
+//       }
+//     )
+//   })
+// }
 
 // (e) => {e.preventDefault()} IMPORTANT for many cases
 
@@ -377,6 +537,7 @@ const handleForgotPassword = async (e) => {
 
   try {
     await sendPasswordResetEmail(auth, email)
+
     toast.success("A password reset email has been sent to your email address", {
       position: "top-center",
       autoClose: 4000,
@@ -536,7 +697,7 @@ const resetForgotPasswordMode = () => {
   return (
     <>
       {/* Import Google Fonts */}
-      <style jsx global>{`
+      {/* <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Jomhuria&family=Chela+One&family=Lobster&family=Nova+Square&family=Abril+Fatface&family=Boldonse&family=Passion+One:wght@400;700;900&family=Spline+Sans:wght@300..700&display=swap');
         
         .font-jomhuria {
@@ -580,7 +741,7 @@ const resetForgotPasswordMode = () => {
         .text-shadow {
           text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
         }
-      `}</style>
+      `}</style> */}
 
       <ToastContainer 
         position="top-right"
@@ -591,6 +752,7 @@ const resetForgotPasswordMode = () => {
         theme="light"
         style={{ zIndex: 9999 }}
       />
+      
 
       <div className="flex flex-col md:flex-row min-h-screen">
         {/* Left column with gradient background and rotating slides */}
@@ -903,7 +1065,7 @@ const resetForgotPasswordMode = () => {
                           alt="Profile Preview"
                           className="w-24 h-24 mx-auto rounded-full object-cover mb-2"
                         />
-                        {/* Red Cross Button */}
+                        {/*button to cancel out image*/}
                         <button
                           type="button"
                           className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600 transition"
@@ -923,7 +1085,7 @@ const resetForgotPasswordMode = () => {
                     id="profilePictureInput"
                     type="file"
                     accept="image/*"
-                    onChange={(e) => handleProfilePictureUpload(e)}
+                    onChange={(e) => handleProfilePictureUpload(e, setProfilePicture)}
                     className="hidden"
                   />
                 </div>

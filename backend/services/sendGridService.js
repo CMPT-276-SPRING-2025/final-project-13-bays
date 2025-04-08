@@ -1,18 +1,20 @@
 const sgMail = require('@sendgrid/mail');
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);  // Use environment variable for API key
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 /**
  * Function to send an email via SendGrid
  * @param {string} to - Recipient email address
  * @param {string} subject - Email subject
- * @param {string} text - Email body content
+ * @param {string} text - Plain text content
+ * @param {string} html - HTML content (optional)
  */
-const sendEmail = async (to, subject, text) => {
+const sendEmail = async (to, subject, text, html = null) => {
   const msg = {
-    to: to, // Recipient Email Adress
+    to,
     from: 'tabmarkservices@gmail.com', // Verified sender email on SendGrid
-    subject: subject,
-    text: text, // Body of the email
+    subject,
+    text,
+    ...(html && { html }), // Include HTML content if provided
   };
 
   try {
@@ -20,6 +22,7 @@ const sendEmail = async (to, subject, text) => {
     console.log('Email sent successfully');
   } catch (error) {
     console.error('Error sending email:', error.response ? error.response.body : error);
+    throw error;
   }
 };
 

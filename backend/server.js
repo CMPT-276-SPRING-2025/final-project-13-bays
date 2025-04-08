@@ -1,43 +1,45 @@
-require('dotenv').config();  // loads in the env variables from .env
+require('dotenv').config();
 const express = require('express');
-// const cors = require('cors');
-// const session = require('express-session');
-const { sendEmail } = require('./services/sendGridService')
-const emailRoutes = require('./routes/emailRoutes');  // routes for SendGrid API
+const { sendDailyEmails } = require('./utils/dailyEmailJob'); // Import the daily email job
+const { sendWeeklyEmails } = require('./utils/weeklyEmailJob'); // Import the weekly email job
+
+// Initialize Firebase Admin SDK
+const admin = require('firebase-admin');
+
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert({
+      type: process.env.FIREBASE_TYPE,
+      project_id: process.env.FIREBASE_PROJECT_ID,
+      private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
+      private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      client_email: process.env.FIREBASE_CLIENT_EMAIL,
+      client_id: process.env.FIREBASE_CLIENT_ID,
+      auth_uri: process.env.FIREBASE_AUTH_URI,
+      token_uri: process.env.FIREBASE_TOKEN_URI,
+      auth_provider_x509_cert_url: process.env.FIREBASE_AUTH_PROVIDER_X509_CERT_URL,
+      client_x509_cert_url: process.env.FIREBASE_CLIENT_X509_CERT_URL,
+    }),
+  });
+}
 
 const app = express();
-
-
-// // middleware used
-// app.use(cors());  // enable cross-origin requests ~ allows react to make reqs to our backend here
-app.use(express.json());  // parses request data ~ allows backend to handle JSON and form submissions
-// app.use(express.urlencoded({ extended: true }));  // parsing URL-encoded data
-// app.use(session({ secret: 'your-secret-key', resave: false, saveUninitialized: true }));  // Session management for user data
+app.use(express.json());
 
 // Root route
 app.get('/', (req, res) => {
   res.send('Welcome to the backend server!');
 });
 
+// Routes
+const emailRoutes = require('./routes/emailRoutes');
+app.use('/email', emailRoutes);
 
-// // Email routes
-app.use('/email', emailRoutes);  // routes for sending emails via SendGrid
+// Start the daily and weekly email jobs
+sendDailyEmails(); // Ensure the daily job starts when the server runs
+sendWeeklyEmails(); // Ensure the weekly job starts when the server runs
 
-// Test route to send emails
-app.get('/test-email', async (req, res) => {
-  try {
-    const to = 'saadausmani123@gmail.com';
-    const subject = 'Sendgriddy Email';
-    const text = 'This is a test email sent to sendgridders.';
-    await sendEmail(to, subject, text);
-    res.send('Emails sent successfully!');
-  } catch (error) {
-    console.error('Error sending emails:', error.response ? error.response.body : error);
-    res.status(500).send('Failed to send emails');
-  }
-});
-
-// server port
+// Server port
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

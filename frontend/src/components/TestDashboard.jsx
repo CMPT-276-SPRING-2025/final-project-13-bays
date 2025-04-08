@@ -60,7 +60,7 @@ export default function Dashboard() {
         <p className="text-gray-600 mb-6">Welcome to your projects!</p>
         <button
           onClick={handleLogout}
-          className="w-full py-3 px-4 bg-red-500 hover:bg-red-600 text-white font-medium rounded-md transition duration-200"
+          className="w-full py-3 px-4 bg-red-500 hover:bg-red-600 text-white font-medium font-spline-sans-tab rounded-md transition duration-200"
         >
           Logout
         </button>
