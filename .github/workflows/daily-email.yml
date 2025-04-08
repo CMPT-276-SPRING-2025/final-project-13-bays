@@ -4,7 +4,7 @@ name: Daily Email Job
 on:
   schedule:
     # - cron: "0 8 * * *" # Runs daily at 8:00 AM UTC
-    - cron: "*/5 * * * *" # Test, run every 5 minutes
+    - cron: "* * * * *" # Test, run every 5 minutes
 
 jobs:
   daily-email:
