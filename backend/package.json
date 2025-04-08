@@ -4,6 +4,7 @@
   "main": "server.js",
   "private": true,
   "scripts": {
+    "build": "echo No build step for backend",
     "test": "jest --roots test",
     "start": "node server.js"
   },
