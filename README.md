@@ -4,6 +4,10 @@
 - **Group Number:** 13
 - **Group Name:** Bays
 
+- **Website Link:** [https://tabmark-d081a.web.app/](https://tabmark-d081a.web.app/)
+- **Demo Video Link:** [Demo Video](https://drive.google.com/file/d/1Lgv4CdeSMN2NhwT-lqC8tZ-RHISh66aP/view)
+- **Final Report Link:** [Project Final Report](https://drive.google.com/file/d/1qam_Ngk6Q4GvjVifmBe6vSgqL3SdksdS/view)
+
 ## 📝 Project Title
 **TabMark**
 
@@ -41,7 +45,7 @@ __**Goal:**__ Help the user organize projects on a web browsers more convenientl
 -A website helping users to be successful in their academic endeavour, as well as other facets of life.
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# LOCAL DEPLOY GUIDE:
+# LOCAL DEPLOY GUIDE: ()
 
 1. Go to chrome://extensions
 2. Enable developer mode by toggling button in the top right
@@ -51,7 +55,7 @@ __**Goal:**__ Help the user organize projects on a web browsers more convenientl
 6. Open repository/frontend/src/components/home-paje.jsx
 7. Replace the ID number value for EXTENSION_ID that is placed before all the imports at the top of the file.
 8. Make sure extension is enabled on their Chrome
-9. Run both frontend and backend server by doing “npm start” in the root directory, and then go “ http://localhost:5173/”
+9. Run both frontend and backend server by doing "npm install" in both frontend/ and backend/, then “npm start” in the root directory, and then go “ http://localhost:5173/”
 
 ## Local Testing for Email 
 1. Create Projects that are "Urgent" when on the localhost created above
