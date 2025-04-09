@@ -29,12 +29,10 @@ export default async function uploadProjectToFirestore({ userId, userName, userM
     await setDoc(projectRef1, dataToUpload1);
     await setDoc(projectRef2, dataToUpload2);
 
-    toast.success("Project saved successfully!");
     console.log("Project is saved to Firestore!");
     if (onSuccess) onSuccess();
   } catch (error) {
     console.error("Error saving project to Firestore:", error);
-    toast.error("Failed to save project. Please try again.");
     if (onError) onError(error);
   }
 }

@@ -696,6 +696,7 @@ const resetForgotPasswordMode = () => {
 
   return (
     <>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0"></meta>
       {/* Import Google Fonts */}
       {/* <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Jomhuria&family=Chela+One&family=Lobster&family=Nova+Square&family=Abril+Fatface&family=Boldonse&family=Passion+One:wght@400;700;900&family=Spline+Sans:wght@300..700&display=swap');
@@ -763,7 +764,7 @@ const resetForgotPasswordMode = () => {
             <p className="text-4xl font-lobster -mt-6">Bookmarks, But Smarter</p>
           </div>
 
-          <div className="max-w-[85%] flex flex-col items-center mt-8">
+          <div className="max-w-[85%] flex flex-col items-center mt-16">
             {/* Rotating slide content */}
             <div className="min-h-[42vh] w-full flex items-center justify-center relative">
               <div

@@ -1,9 +1,10 @@
 "use client"
 
 import { useEffect, useState, useRef, useMemo} from "react"
-import { auth, storage } from "../firebase-config.js"
+import { auth, storage, db } from "../firebase-config.js"
 import { useNavigate } from "react-router-dom"
 import { onAuthStateChanged, signOut, updateProfile } from "firebase/auth"
+import { doc, setDoc, getDoc, getDocs, collection, updateDoc, deleteDoc, arrayUnion, arrayRemove } from "firebase/firestore"
 import { ToastContainer, toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import { handleProfilePictureUpload, uploadProfilePicture } from "../utils/profilePictureUtils.js"
@@ -123,8 +124,15 @@ export default function HomePage() {
     dueDate: today,
     difficulty: "Easy",
     saveTabs: true,
-    category: null, // For user category selection
+    category: selectedUserCategory || null, // For user category selection
   })
+
+  useEffect(() => {
+    setNewProject((prev) => ({
+      ...prev,
+      category: selectedUserCategory || null, // Update category when selectedUserCategory changes
+    }));
+  }, [selectedUserCategory]);
 
   // State for delete confirmation
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -253,28 +261,53 @@ const openTabsForProject = async (projectId) => {
   }
 
   // Function to update project categories based on current date
-  const updateProjectCategories = () => {
-    // Update general projects
-    setProjects(
-      projects.map((project) => {
-        if (project.completed) return project // Don't change completed projects
-        const newCategory = determineSystemCategory(project.dueDate)
-        return { ...project, systemCategory: newCategory }
-      }),
-    )
+  // const updateProjectCategories = async () => {
+  //   try {
+  //     // Update general projects
+  //     setProjects(
+  //       projects.map((project) => {
+  //         if (project.completed) return project; // Skip completed projects
+  //         const newCategory = determineSystemCategory(project.dueDate);
+  //         return { ...project, systemCategory: newCategory };
+  //       })
+  //     );
+  
+  //     // Update user category projects
+  //     for (const category of projectCategories) {
+  //       const categoryRef = doc(db, `projects/${userId}/userCategories`, category.id);
+  //       const categorySnapshot = await getDoc(categoryRef);
+  
+  //       if (categorySnapshot.exists()) {
+  //         const categoryData = categorySnapshot.data();
+  
+  //         const updatedProjects = categoryData.projects.map((projectId) => {
+  //           const project = projects.find((p) => p.id === projectId);
+  //           if (!project || project.completed) return project; // Skip completed projects
+  //           const newCategory = determineSystemCategory(project.dueDate);
+  //           return { ...project, systemCategory: newCategory };
+  //         });
+  
+  //         // Update local state
+  //         setUserCategoryProjects((prev) => ({
+  //           ...prev,
+  //           [category.id]: updatedProjects,
+  //         }));
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error("Error updating project categories:", error);
+  //   }
+  // };
 
-    // Update user category projects
-    Object.keys(userCategoryProjects).forEach((categoryId) => {
-      setUserCategoryProjects((prev) => ({
-        ...prev,
-        [categoryId]: prev[categoryId].map((project) => {
-          if (project.completed) return project // Don't change completed projects
-          const newCategory = determineSystemCategory(project.dueDate)
-          return { ...project, systemCategory: newCategory }
-        }),
-      }))
-    })
-  }
+  const updateProjectCategories = () => {
+    setProjects((prevProjects) =>
+      prevProjects.map((project) => {
+        if (project.completed) return project; // Skip completed projects
+        const newCategory = determineSystemCategory(project.dueDate);
+        return { ...project, systemCategory: newCategory };
+      })
+    );
+  };
 
   // Update categories when component mounts and daily
   useEffect(() => {
@@ -285,44 +318,75 @@ const openTabsForProject = async (projectId) => {
   }, [])
 
   // Function to add a new category
-  const addNewCategory = () => {
-    if (newCategory.name.trim() === "") return
-
-    const newId = `category-${Date.now()}`
+  const addNewCategory = async () => {
+    if (newCategory.name.trim() === "") return;
+    
+    const newId = `category-${Date.now()}`; // Generate a unique ID
     const newUserCategory = {
       id: newId,
       name: newCategory.name,
       icon: newCategory.icon,
-      description: newCategory.description || "", // Add description
+      description: newCategory.description || "",
+      projects: [], // Initialize with an empty projects array
+    };
+  
+    try {
+      // Save the new category to Firestore
+      const categoryRef = doc(db, `projects/${userId}/userCategories`, newId);
+      await setDoc(categoryRef, newUserCategory);
+  
+      // Update local state
+      setProjectCategories([...projectCategories, newUserCategory]);
+  
+      // Reset form and close modal
+      setNewCategory({
+        name: "",
+        icon: "briefcase",
+        description: "",
+      });
+      setShowNewCategoryModal(false);
+  
+      // Automatically select the new category
+      setSelectedUserCategory(newId);
+      setSelectedSystemCategory(null);
+  
+      console.log("Category created successfully!");
+    } catch (error) {
+      console.error("Error creating category:", error);
     }
-
-    setProjectCategories([...projectCategories, newUserCategory])
-
-    // Initialize empty projects array for this category
-    setUserCategoryProjects((prev) => ({
-      ...prev,
-      [newId]: [],
-    }))
-
-    // Reset form and close modal
-    setNewCategory({
-      name: "",
-      icon: "briefcase",
-      description: "", // Reset description
-    })
-    setShowNewCategoryModal(false)
-
-    // Automatically select the new category
-    setSelectedUserCategory(newId)
-    setSelectedSystemCategory(null)
-  }
+  };
 
   // Function to handle selecting a user category
-  const selectUserCategory = (categoryId) => {
-    setSelectedUserCategory(categoryId)
-    setSelectedSystemCategory(null)
-    setIsMenuOpen(false)
-  }
+  const selectUserCategory = async (categoryId) => {
+    console.log("category id:", categoryId)
+    setSelectedUserCategory(categoryId);
+    setSelectedSystemCategory(null);
+    setIsMenuOpen(false);
+  
+    try {
+      console.log("user:", userId)
+      const categoryRef = doc(db, `projects/${userId}/userCategories`, categoryId);
+      const categorySnapshot = await getDoc(categoryRef);
+  
+      if (categorySnapshot.exists()) {
+        // Don't modify the projects array here
+        // Just set the selected category and let the filteredProjects hook handle it
+        
+        // You might want to update the category data in your projectCategories state
+        const categoryData = categorySnapshot.data();
+        setProjectCategories(prevCategories => 
+          prevCategories.map(cat => 
+            cat.id === categoryId ? {...cat, projects: categoryData.projects} : cat
+          )
+        );
+        
+      } else {
+        console.error("Category not found in Firestore.");
+      }
+    } catch (error) {
+      console.error("Error fetching category:", error);
+    }
+};
 
   // Function to handle selecting a system category
   const selectSystemCategory = (categoryId) => {
@@ -342,6 +406,23 @@ const openTabsForProject = async (projectId) => {
       }, 300)
     }, 300)
   }
+
+  const deleteCategory = async (categoryId) => {
+    try {
+      // Delete the category from Firestore
+      const categoryRef = doc(db, `projects/${userId}/userCategories`, categoryId);
+      await deleteDoc(categoryRef);
+  
+      // Remove the category from local state
+      setProjectCategories(
+        projectCategories.filter((category) => category.id !== categoryId)
+      );
+  
+      console.log("Category deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting category:", error);
+    }
+  };
 
   // Function to delete a project with confirmation
   const initiateDelete = (id) => {
@@ -528,7 +609,7 @@ const openTabsForProject = async (projectId) => {
   };
 
    // Function to add a new project - to the currently selected category
-   const addNewProject = () => {
+   const addNewProject = async () => {
     if (newProject.name.trim() === "") {
       toast.error("Project name cannot be empty!");
       return;
@@ -547,53 +628,71 @@ const openTabsForProject = async (projectId) => {
       progress: 0,
       dueDate: newProject.dueDate,
       difficulty: newProject.difficulty,
-      systemCategory: "Default", // Use the currently selected category
+      systemCategory: determineSystemCategory(newProject.dueDate),
       completed: false,
-      saveTabs: true,
-      tabs: []
+      saveTabs: newProject.saveTabs,
+      tabs: [],
     };
   
     // Add the project to the local state
     setProjects([...projects, { ...projectData, timeLeft: calculateTimeLeft(newProject.dueDate) }]);
   
-    // Call the Firebase upload function
-    uploadProjectToFirestore({
-      userId,
-      userName,
-      userMail,
-      projectData,
-      onSuccess: () => {
-        console.log("Project uploaded successfully!");
+    try {
+      // Upload the project to Firestore
+      await uploadProjectToFirestore({
+        userId,
+        userName,
+        userMail,
+        projectData,
+      });
   
-        // If saveTabs is true, save the tabs to Firestore
-        if (newProject.saveTabs) {
-          if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.connect) {
-            const TabMarkHelperID = "ombjnnoklkbbmedngjcmbljnlppbdlcf";
-            const port = chrome.runtime.connect(TabMarkHelperID, { name: "frontend-connection" });
+      console.log("Project uploaded successfully!");
   
-            port.postMessage({ action: "saveTabs" });
-            port.onMessage.addListener(async (response) => {
-              if (response?.success) {
-                try {
-                  const tabs = response.tabs.map((tab) => ({ url: tab.url, title: tab.title }))
-                  await saveTabsToFirestore(user.uid, newId, tabs); // Save tabs to Firestore
-                  console.log("Tabs saved successfully!");
-                } catch (error) {
-                  console.error("Failed to save tabs:", error);
-                }
-              } else {
-                console.error("Failed to retrieve tabs from Chrome extension:", response?.error);
+      // If a user category is selected, move the project to that category
+
+      // works for edits
+      // if (selectedUserCategory) {
+      //   console.log(selectedUserCategory.id)
+      //   console.log(newId)
+      //   await moveProjectToCategory(newId, selectedUserCategory);
+      // }
+
+      const categoryToUse = newProject.category || selectedUserCategory;
+    
+      // If any category is selected, move the project to that category
+      if (categoryToUse) {
+        await moveProjectToCategory(newId, categoryToUse);
+        console.log("Added to category:", categoryToUse);
+      }
+  
+
+      // If saveTabs is true, save the tabs to Firestore
+      if (newProject.saveTabs) {
+        if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.connect) {
+          const TabMarkHelperID = "ombjnnoklkbbmedngjcmbljnlppbdlcf";
+          const port = chrome.runtime.connect(TabMarkHelperID, { name: "frontend-connection" });
+  
+          port.postMessage({ action: "saveTabs" });
+          port.onMessage.addListener(async (response) => {
+            if (response?.success) {
+              try {
+                const tabs = response.tabs.map((tab) => ({ url: tab.url, title: tab.title }));
+                await saveTabsToFirestore(user.uid, newId, tabs); // Save tabs to Firestore
+                console.log("Tabs saved successfully!");
+              } catch (error) {
+                console.error("Failed to save tabs:", error);
               }
-            });
-          } else {
-            console.error("Chrome runtime is not available. Ensure this is running in a Chrome extension environment.");
-          }
+            } else {
+              console.error("Failed to retrieve tabs from Chrome extension:", response?.error);
+            }
+          });
+        } else {
+          console.error("Chrome runtime is not available. Ensure this is running in a Chrome extension environment.");
         }
-      },
-      onError: (error) => {
-        console.error("Error uploading project:", error);
-      },
-    });
+      }
+    } catch (error) {
+      console.error("Error uploading project:", error);
+    }
   
     // Reset form and close modal
     setNewProject({
@@ -601,7 +700,7 @@ const openTabsForProject = async (projectId) => {
       dueDate: today,
       difficulty: "Easy",
       saveTabs: true,
-      Category: null,
+      category: null,
     });
     setShowNewProjectModal(false);
   };
@@ -668,25 +767,37 @@ const openTabsForProject = async (projectId) => {
   }
 
   // possible conflict
+
 // Replace the existing filteredProjects definition with this more comprehensive version
-  const filteredProjects = useMemo(() => {
-    // When no category is selected (global homepage with "Welcome to TabMark"), show all projects
-    if (!selectedSystemCategory && !selectedUserCategory) {
-      // Return all projects sorted by due date (earliest first) - also dont want completed projects in global view
-      return [...projects].filter(project => project.systemCategory !== "Completed").sort((a, b) => {
-        // Handle projects without due dates (put them at the end)
-        if (!a.dueDate) return 1;
-        if (!b.dueDate) return -1;
-        // Compare due dates
-        return new Date(a.dueDate) - new Date(b.dueDate);
-      });
+const filteredProjects = useMemo(() => {
+  if (!selectedUserCategory && !selectedSystemCategory) {
+    // Show all projects except completed ones
+    return projects.filter((project) => project.systemCategory !== "Completed");
+  }
+
+  if (selectedUserCategory) {
+    const category = projectCategories.find((cat) => cat.id === selectedUserCategory);
+    if (!category) return [];
+
+    const categoryProjects = projects.filter((project) =>
+      category.projects.includes(project.id)
+    );
+
+    if (selectedSystemCategory) {
+      return categoryProjects.filter(
+        (project) => project.systemCategory === selectedSystemCategory
+      );
     }
-    
-    // Otherwise use the existing filtering logic
-    return selectedSystemCategory === "All" 
-      ? projects 
-      : projects.filter((project) => project.systemCategory === selectedSystemCategory);
-  }, [projects, selectedSystemCategory, selectedUserCategory]);
+
+    return categoryProjects;
+  }
+
+  if (selectedSystemCategory) {
+    return projects.filter((project) => project.systemCategory === selectedSystemCategory);
+  }
+
+  return [];
+}, [projects, selectedUserCategory, selectedSystemCategory, projectCategories]);
 
   // Get projects to display based on selected categories
   // const getDisplayProjects = () => {
@@ -725,6 +836,29 @@ const openTabsForProject = async (projectId) => {
   //   return allProjects
   // }
 
+
+  const getDisplayProjects = () => {
+    if (selectedUserCategory) {
+      const categoryProjects = userCategoryProjects[selectedUserCategory] || [];
+  
+      // Filter by system category if selected
+      if (selectedSystemCategory) {
+        return categoryProjects.filter(
+          (project) => project.systemCategory === selectedSystemCategory
+        );
+      }
+  
+      return categoryProjects;
+    } else if (selectedSystemCategory) {
+      return projects.filter(
+        (project) => project.systemCategory === selectedSystemCategory
+      );
+    }
+  
+    // Default: Show all projects except completed ones
+    return projects.filter((project) => !project.completed);
+  };
+
   // Get all projects for calendar view (no filtering)
   const getAllProjects = () => {
     return [...projects, ...Object.values(userCategoryProjects).flat()]
@@ -738,24 +872,24 @@ const openTabsForProject = async (projectId) => {
       case "Easy":
         return (
           <div className="flex items-center">
-            <div className="mr-3 relative w-10 h-10 flex items-center justify-center">
-              <img 
-                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/output-onlinegiftools-zVXDeNPuWheOjfSfHgpv3R96ceiRG8.gif" 
-                alt="Running figure - Easy difficulty" 
-                className="w-10 h-10 object-contain"
-              />
-            </div>
+          <div className="mr-3 relative w-12 h-12 flex items-center justify-center">
+            <img 
+              src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/output-onlinegiftools-zVXDeNPuWheOjfSfHgpv3R96ceiRG8.gif" 
+              alt="Running figure - Easy difficulty" 
+              className="w-full h-full object-contain"
+            />
+          </div>
             <span className="text-base text-gray-500">Easy</span>
           </div>
         )
       case "Medium":
         return (
           <div className="flex items-center">
-            <div className="mr-3 relative w-10 h-10 flex items-center justify-center">
+            <div className="mr-3 relative w-12 h-12 flex items-center justify-center">
               <img 
                 src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/climbingFix-TXH4C1kG5ydMgrc8LZALJ2JrQwfngh.gif" 
                 alt="Climbing figure - Medium difficulty" 
-                className="w-10 h-10 object-contain"
+                className="w-full h-full object-contain"
               />
             </div>
             <span className="text-base text-gray-500">Medium</span>
@@ -764,11 +898,11 @@ const openTabsForProject = async (projectId) => {
       case "Hard":
         return (
           <div className="flex items-center">
-            <div className="mr-3 relative w-10 h-10 flex items-center justify-center">
+            <div className="mr-3 relative w-12 h-12 flex items-center justify-center">
               <img 
                 src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/drowningFix-eiWzjCgLQJkbPA60x0JrFS9FVguKWh.gif" 
                 alt="Drowning hand - Hard difficulty" 
-                className="w-10 h-10 object-contain"
+                className="w-full h-full object-contain"
               />
             </div>
             <span className="text-base text-gray-500">Hard</span>
@@ -821,11 +955,47 @@ const openTabsForProject = async (projectId) => {
     return "All Projects"
   }
 
+  useEffect(() => {
+    const fetchCategoriesFromFirestore = async () => {
+      try {
+        if (!userId) return;
+  
+        const categoriesRef = collection(db, `projects/${userId}/userCategories`);
+        const snapshot = await getDocs(categoriesRef);
+  
+        if (!snapshot.empty) {
+          const categories = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+  
+          setProjectCategories(categories);
+          console.log("Categories fetched successfully:", categories);
+        } else {
+          console.log("No categories found in Firestore.");
+        }
+      } catch (error) {
+        console.error("Error fetching categories from Firestore:", error);
+      }
+    };
+  
+    fetchCategoriesFromFirestore();
+  }, [userId]);
+
   // Add this function to handle editing a project
   const initiateEditProject = (id) => {
     const project = projects.find(p => p.id === id);
     if (project) {
-      setProjectToEdit(project);
+      // Log project properties to help debug
+      console.log("Editing project:", project);
+      
+      setProjectToEdit({
+        ...project,
+        // Use BOTH category properties for consistency
+        category: project.userCategory || project.category || null,
+        userCategory: project.userCategory || project.category || null,
+        previousCategory: project.userCategory || project.category || null
+      });
       setShowEditProjectModal(true);
     } else {
       console.error("Project not found:", id);
@@ -893,6 +1063,12 @@ const openTabsForProject = async (projectId) => {
             console.error("Chrome runtime is not available. Ensure this is running in a Chrome extension environment.");
           }
         }
+
+        if (projectToEdit.category !== projectToEdit.previousCategory) {
+          moveProjectToCategory(projectToEdit.id, projectToEdit.category);
+          console.log("Moved to category with ID: ", projectToEdit.category)
+        }
+
         // Close the modal after successful update
         setShowEditProjectModal(false);
         setProjectToEdit(null);
@@ -979,64 +1155,181 @@ const openTabsForProject = async (projectId) => {
   }
 
   // Add this function to save edited category
-  const saveEditedCategory = () => {
-    if (!categoryToEdit || categoryToEdit.name.trim() === "") return
-
-    setProjectCategories(
-      projectCategories.map((category) => (category.id === categoryToEdit.id ? categoryToEdit : category)),
-    )
-
-    setShowEditCategoryModal(false)
-    setcategoryToEdit(null)
-  }
+  const saveEditedCategory = async () => {
+    if (!categoryToEdit || categoryToEdit.name.trim() === "") return;
+  
+    try {
+      // Update the category in Firestore
+      const categoryRef = doc(db, `projects/${userId}/userCategories`, categoryToEdit.id);
+      await updateDoc(categoryRef, {
+        name: categoryToEdit.name,
+        description: categoryToEdit.description,
+        icon: categoryToEdit.icon,
+      });
+  
+      // Update local state
+      setProjectCategories(
+        projectCategories.map((category) =>
+          category.id === categoryToEdit.id ? categoryToEdit : category
+        )
+      );
+  
+      setShowEditCategoryModal(false);
+      setcategoryToEdit(null);
+  
+      console.log("Category updated successfully!");
+    } catch (error) {
+      console.error("Error updating category:", error);
+    }
+  };
 
   // Add this function to move a project to a different category
-  const moveProjectToCategory = (projectId, newCategoryId) => {
-    // Find the project in all possible locations
-    let projectToMove = null
-    let sourceCategory = null
+  // const moveProjectToCategory = (projectId, newCategoryId) => {
+  //   // Find the project in all possible locations
+  //   let projectToMove = null
+  //   let sourceCategory = null
 
-    // Check in general projects
-    const generalProject = projects.find((p) => p.id === projectId)
-    if (generalProject) {
-      projectToMove = { ...generalProject }
-      sourceCategory = null
-    } else {
-      // Check in user categories
-      for (const [categoryId, categoryProjects] of Object.entries(userCategoryProjects)) {
-        const foundProject = categoryProjects.find((p) => p.id === projectId)
-        if (foundProject) {
-          projectToMove = { ...foundProject }
-          sourceCategory = categoryId
-          break
+  //   // Check in general projects
+  //   const generalProject = projects.find((p) => p.id === projectId)
+  //   if (generalProject) {
+  //     projectToMove = { ...generalProject }
+  //     sourceCategory = null
+  //   } else {
+  //     // Check in user categories
+  //     for (const [categoryId, categoryProjects] of Object.entries(userCategoryProjects)) {
+  //       const foundProject = categoryProjects.find((p) => p.id === projectId)
+  //       if (foundProject) {
+  //         projectToMove = { ...foundProject }
+  //         sourceCategory = categoryId
+  //         break
+  //       }
+  //     }
+  //   }
+
+  //   if (!projectToMove) return
+
+  //   // Remove from source
+  //   if (sourceCategory) {
+  //     setUserCategoryProjects((prev) => ({
+  //       ...prev,
+  //       [sourceCategory]: prev[sourceCategory].filter((p) => p.id !== projectId),
+  //     }))
+  //   } else {
+  //     setProjects(projects.filter((p) => p.id !== projectId))
+  //   }
+
+  //   // Add to destination
+  //   if (newCategoryId) {
+  //     projectToMove.userCategory = newCategoryId
+  //     setUserCategoryProjects((prev) => ({
+  //       ...prev,
+  //       [newCategoryId]: [...(prev[newCategoryId] || []), projectToMove],
+  //     }))
+  //   } else {
+  //     projectToMove.userCategory = null
+  //     setProjects([...projects, projectToMove])
+  //   }
+  // }
+
+  const moveProjectToCategory = async (projectId, newCategoryId) => {
+    // Find the project in the current state
+    const project = projects.find((p) => p.id === projectId);
+    if (!project) {
+      console.error("Project not found:", projectId);
+      return;
+    }
+    
+    console.log("Moving project:", projectId);
+    
+    try {
+      // 1. First check if the new category exists before attempting any changes
+      if (newCategoryId) {
+        const newCategoryRef = doc(db, `projects/${userId}/userCategories`, newCategoryId);
+        const newCategoryDoc = await getDoc(newCategoryRef);
+        
+        if (!newCategoryDoc.exists()) {
+          console.error("Target category doesn't exist:", newCategoryId);
+          toast.error("Selected category doesn't exist");
+          return;
         }
       }
-    }
+      
+      // 2. Only then try to remove from old category if it exists
+      const oldCategoryId = project.category || project.userCategory;
+      if (oldCategoryId) {
+        try {
+          const oldCategoryRef = doc(db, `projects/${userId}/userCategories`, oldCategoryId);
+          const oldCategoryDoc = await getDoc(oldCategoryRef);
+          
+          if (oldCategoryDoc.exists()) {
+            await updateDoc(oldCategoryRef, {
+              projects: arrayRemove(projectId),
+            });
+            console.log("Removed from previous category:", oldCategoryId);
+            setProjectCategories(prevCategories => 
+              prevCategories.map(cat => 
+                cat.id === oldCategoryId 
+                  ? {...cat, projects: cat.projects.filter(id => id !== projectId)} 
+                  : cat
+              )
+            );
+          }
+        } catch (removeError) {
+          console.log("Error removing from category - continuing anyway:", removeError);
+          // Continue with the rest of the function even if this fails
+        }
+      }
+  
+      // 3. Add to new category
+      if (newCategoryId) {
+        const newCategoryRef = doc(db, `projects/${userId}/userCategories`, newCategoryId);
+        await updateDoc(newCategoryRef, {
+          projects: arrayUnion(projectId),
+        });
+        console.log("Added to new category:", newCategoryId);
 
-    if (!projectToMove) return
-
-    // Remove from source
-    if (sourceCategory) {
-      setUserCategoryProjects((prev) => ({
-        ...prev,
-        [sourceCategory]: prev[sourceCategory].filter((p) => p.id !== projectId),
-      }))
-    } else {
-      setProjects(projects.filter((p) => p.id !== projectId))
+        setProjectCategories(prevCategories => 
+          prevCategories.map(cat => 
+            cat.id === newCategoryId 
+              ? {...cat, projects: [...(cat.projects || []), projectId]} 
+              : cat
+          )
+        );
+      }
+  
+      // 4. Update the project in Firestore to track its category
+      await modifyProjectInFirestore({
+        userId: user.uid,
+        projectId: projectId.toString(),
+        updatedData: { 
+          category: newCategoryId,
+          userCategory: newCategoryId
+        },
+        onSuccess: () => {
+          console.log("Project category updated in Firestore");
+        },
+        onError: (error) => {
+          console.error("Error updating project category in Firestore:", error);
+        }
+      });
+  
+      // 5. Update local state
+      setProjects(
+        projects.map((p) =>
+          p.id === projectId ? { 
+            ...p, 
+            userCategory: newCategoryId,
+            category: newCategoryId
+          } : p
+        )
+      );
+  
+      console.log("Project moved successfully!");
+    } catch (error) {
+      console.error("Error moving project:", error);
+      toast.error("Failed to move project: " + error.message);
     }
-
-    // Add to destination
-    if (newCategoryId) {
-      projectToMove.userCategory = newCategoryId
-      setUserCategoryProjects((prev) => ({
-        ...prev,
-        [newCategoryId]: [...(prev[newCategoryId] || []), projectToMove],
-      }))
-    } else {
-      projectToMove.userCategory = null
-      setProjects([...projects, projectToMove])
-    }
-  }
+  };
 
     // Calendar helper functions
     const daysInMonth = (month, year) => {
@@ -1060,7 +1353,7 @@ const openTabsForProject = async (projectId) => {
       const allProjects = getAllProjects()
       return allProjects.filter((project) => {
         if (!project.dueDate) return false
-        const dueDate = new Date(project.dueDate)
+        const dueDate = new Date(project.dueDate + 'T00:00:00') // need to specify midnight due date to counteract timezone differences
         return (
           dueDate.getDate() === date.getDate() &&
           dueDate.getMonth() === date.getMonth() &&
@@ -1245,9 +1538,11 @@ const openTabsForProject = async (projectId) => {
     <div className="min-h-screen bg-[#f8eece] relative overflow-x-hidden [&_button]:cursor-pointer">
       {/* Fetch projects from Firestore */}
       <FetchProjectsFromFirestore
-        userId = { user.uid }
-        onProjectsFetched={(fetchedProjects) => setProjects(fetchedProjects)}
-      />
+          userId={user.uid}
+          onProjectsFetched={(fetchedProjects) => {
+            setProjects(fetchedProjects);
+          }}
+        />
       {/* Sidebar Menu */}
       <div
         ref={sidebarRef}
@@ -1628,6 +1923,7 @@ const openTabsForProject = async (projectId) => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <p className = "font-passion-one text-red-600"> <span className = "text-4xl font-jomhuria"> IMPORTANT: </span>  Please ensure you have the Tabmark Helper extension!</p>   {/* add hyperlink to TabMark Helper when done*/}
         {/* Display current category name only when a category is selected */}
         {viewMode === "list" &&
           (selectedSystemCategory || selectedUserCategory || (!selectedSystemCategory && !selectedUserCategory)) && (
@@ -1932,7 +2228,7 @@ const openTabsForProject = async (projectId) => {
             </div>
 
             {/* Modal Body */}
-            <div className="px-6 py-4 space-y-6">
+            <div className="px-6 py-1 space-y-4">
               {/* Project Name Input */}
               <div>
                 <label className="block text-lg font-medium text-[#3B0764] mb-1 font-passion-one">Project Name</label>
@@ -1948,7 +2244,7 @@ const openTabsForProject = async (projectId) => {
               {/* Due Date - with min date validation */}
               <div>
                 <label className="block font-medium text-[#3B0764] mb-1 text-lg font-passion-one">Due Date</label>
-                <div className="bg-[#fff0e0] rounded-md p-4 border border-[#ffd0b5]">
+                <div className="bg-[#fff0e0] rounded-md p-1 border border-[#ffd0b5]">
                   <div className="flex items-center bg-white rounded-md px-3 py-2">
                     <Calendar size={18} className="mr-2 text-[#FF8C6B]" />
                     <input
@@ -1965,7 +2261,7 @@ const openTabsForProject = async (projectId) => {
               {/* Difficulty */}
               <div>
                 <label className="block font-medium text-[#3B0764] mb-1 text-lg font-passion-one">Difficulty</label>
-                <div className="bg-[#fff0e0] rounded-md p-4 border border-[#ffd0b5]">
+                <div className="bg-[#fff0e0] rounded-md p-1 border border-[#ffd0b5]">
                   <div className="flex items-center bg-white rounded-md px-3 py-2">
                     <Clock size={18} className="mr-2 text-[#FF8C6B]" />
                     <select
@@ -1981,14 +2277,14 @@ const openTabsForProject = async (projectId) => {
                 </div>
               </div>
 
-              {/* Category Selection - Only show if no user category is selected */}
-              {!selectedUserCategory && projectCategories.length > 0 && (
+              {/* Category Selection - will fix and add later */}
+
+              {/* {!selectedUserCategory && projectCategories.length > 0 && (
                 <div>
                   <label className="block font-medium text-[#3B0764] mb-1 text-lg font-passion-one">Project Category</label>
-                  <div className="bg-[#fff0e0] rounded-md p-4 border border-[#ffd0b5]">
+                  <div className="bg-[#fff0e0] rounded-md p-1 border border-[#ffd0b5]">
                     <div className="flex items-center bg-white rounded-md px-3 py-2">
-                      {/* Dynamically render the icon based on the selected category */}
-                      {newProject.category && getCategoryIcon(projectCategories.find((c) => c.id === newProject.category)?.icon)}
+                      {newProject.category && getCategoryIcon(projectCategories.find((c) => c.id === newProject.category)?.icon || "briefcase")}
                       <select
                         className="bg-transparent focus:outline-none w-full font-spline-sans-tab text-sm"
                         value={newProject.category || ""}
@@ -2006,18 +2302,16 @@ const openTabsForProject = async (projectId) => {
                 </div>
               )}
 
-              {/* Show selected category if user category is selected */}
               {selectedUserCategory && (
                 <div className="bg-[#fff0e0] rounded-md p-3 border border-[#ffd0b5]">
                   <div className="flex items-center">
-                    {/* Dynamically render the icon based on the selected category */}
-                    {getCategoryIcon(projectCategories.find((c) => c.id === selectedUserCategory)?.icon)}
+                    {getCategoryIcon(projectCategories.find((c) => c.id === selectedUserCategory)?.icon || "briefcase")}
                     <span className="text-lg font-passion-one font-medium text-[#FF8C6B]">
-                      Creating in: {projectCategories.find((c) => c.id === selectedUserCategory)?.name}
+                      Creating in: {projectCategories.find((c) => c.id === selectedUserCategory)?.name || "Selected Category"}
                     </span>
                   </div>
                 </div>
-              )}
+              )}  */}
 
               {/* Save Current Tabs Option - Orange */}
               <div className="bg-[#fff0e0] rounded-md p-4 border border-[#ffd0b5]">
@@ -2148,7 +2442,7 @@ const openTabsForProject = async (projectId) => {
               </button>
             </div>
 
-            <div className="px-6 py-4 space-y-6">
+            <div className="px-6 py-1 space-y-6">
               {/* Project Name Input */}
               <div>
                 <label className="block text-lg font-passion-one font-medium text-[#3B0764] mb-1 ">Project Name</label>
@@ -2164,7 +2458,7 @@ const openTabsForProject = async (projectId) => {
               {/* Due Date */}
               <div>
                 <label className="block text-lg font-passion-one font-medium text-[#3B0764] mb-1">Due Date</label>
-                <div className="bg-[#fff0e0] rounded-md p-4 border border-[#ffd0b5]">
+                <div className="bg-[#fff0e0] rounded-md p-1 border border-[#ffd0b5]">
                   <div className="flex items-center bg-white rounded-md px-3 py-2">
                     <Calendar size={18} className="mr-2 text-[#FF8C6B]" />
                     <input
@@ -2181,7 +2475,7 @@ const openTabsForProject = async (projectId) => {
               {/* Difficulty */}
               <div>
                 <label className="block text-lg font-passion-one font-medium text-[#3B0764] mb-1">Difficulty</label>
-                <div className="bg-[#fff0e0] rounded-md p-4 border border-[#ffd0b5]">
+                <div className="bg-[#fff0e0] rounded-md p-1 border border-[#ffd0b5]">
                   <div className="flex items-center bg-white rounded-md px-3 py-2">
                     <Clock size={18} className="mr-2 text-[#FF8C6B]" />
                     <select
@@ -2201,15 +2495,20 @@ const openTabsForProject = async (projectId) => {
               {projectCategories.length > 0 && (
                 <div>
                   <label className="block text-lg font-passion-one font-medium text-[#3B0764] mb-1">Project Category</label>
-                  <div className="bg-[#fff0e0] rounded-md p-4 border border-[#ffd0b5]">
+                  <div className="bg-[#fff0e0] rounded-md p-1 border border-[#ffd0b5]">
                     <div className="flex items-center bg-white rounded-md px-3 py-2">
-                      <Briefcase size={18} className="mr-2 text-[#FF8C6B]" />
+                      {getCategoryIcon(projectCategories.find(c => c.id === projectToEdit.userCategory)?.icon || "briefcase")}
                       <select
                         className="bg-transparent focus:outline-none w-full text-sm font-spline-sans-tab"
                         value={projectToEdit.userCategory || ""}
                         onChange={(e) => {
-                          const newCategoryId = e.target.value || null
-                          setProjectToEdit({ ...projectToEdit, category: newCategoryId })
+                          const newCategoryId = e.target.value || null;
+                          setProjectToEdit({ 
+                            ...projectToEdit, 
+                            previousCategory: projectToEdit.userCategory,
+                            userCategory: newCategoryId,
+                            category: newCategoryId 
+                          });
                         }}
                       >
                         <option value="">No specific category</option>
@@ -2224,7 +2523,7 @@ const openTabsForProject = async (projectId) => {
                 </div>
               )}
 
-              <div className="bg-[#fff0e0] rounded-md p-4 border border-[#ffd0b5]">
+              <div className="bg-[#fff0e0] rounded-md p-1 border border-[#ffd0b5]">
                 <h3 className="text-lg font-medium text-[#FF8C6B] mb-2 racing-sans-one-regular">Save Current Tabs</h3>
                 <p className="font-spline-sans-tab text-sm text-[#FF8C6B] mb-3">
                 Replace the saved tabs for this project with your currently open tabs?

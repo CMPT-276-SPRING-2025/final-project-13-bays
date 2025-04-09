@@ -9,7 +9,7 @@ export default async function deleteProjectFromFirestore({ userId, projectId, on
     }
 
     // Reference to the Firestore document
-    const projectRef = doc(db, `projects/${userId}/userProjects`, projectId);
+    const projectRef = doc(db, `projects/${userId}/userProjects`, projectId)
 
     // Delete the document
     await deleteDoc(projectRef);

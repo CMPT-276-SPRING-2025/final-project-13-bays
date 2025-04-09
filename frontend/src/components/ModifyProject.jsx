@@ -18,14 +18,11 @@ export default async function modifyProjectInFirestore({ userId, projectId, upda
 
     // Update the document with the sanitized data
     await updateDoc(projectRef, sanitizedData);
-
-    toast.success("Project updated successfully!");
     console.log("Project updated in Firestore!");
     if (onSuccess) onSuccess();
   } catch (error) {
     console.log("project id:", projectId);
     console.error("Error updating project in Firestore:", error);
-    toast.error("Failed to update project. Please try again.");
     if (onError) onError(error);
   }
 }
