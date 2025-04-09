@@ -1,3 +1,4 @@
+require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
 const admin = require('firebase-admin');
 const { getFirestore } = require('firebase-admin/firestore');
 const { sendEmail } = require('../services/sendGridService');
@@ -63,4 +64,4 @@ const sendDailyEmails = async () => {
   }
 };
 
-module.exports = { sendDailyEmails };
+sendDailyEmails();

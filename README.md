@@ -5,32 +5,29 @@
 - **Group Name:** Bays
 
 ## 📝 Project Title
-**Tabmark**
+**TabMark**
 
 ## 📖 Project Description
-Tabmark organizes and saves the tabs of the user's choice. The user can get back on track of their project with ease. The website also reminds of the upcoming deadlines, preventing procrastination. Further, the secondary feature is an AI-driven schedule that first gives a user a survey, to detail the current commitments of a person, e.g. courses, other work priorities as well as fitness goals, encompassing a productive life roadmap.
+Tabmark organizes and saves the tabs of the user's choice. The user can get back on track of their project with ease. The website also reminds of the upcoming deadlines, preventing procrastination. Further, there is also a calender view for user to plan their projects ahead more easier.
 
 ## Features
-1. Save an entire window (all the tabs) as like a saved folder of some kind whenever you're doing a project.  This helps you continue where you left off much more easily
-2. Remind you of Deadlines, which is split into 4 categories (placeholder name and time):
-    a) Not Urgent (>1 month away)
-    b) Close (2-4 weeks away)
-    c) Up coming (1-2 week away)
-    d) URGENT!! (1 week away)
-3. If something is in URGENT!!, the website will always have it pop up to constantly remind you
-4. Has a in-depth survey that asks a person their priorities for the coming semester (chosen block of months) including courses, work as well as fitness goals. It will then also ask how much importance they give to each responsibility, taking that into consideration and crafting a well-balanced schedule.
-5. Also tracks important dates i.e midterms, projects, exams, highlighting them and using AI-driven features to modify schedule for week(s) before important dates.
+1. Users are able to do native account creation, as well as, authentication with third-party providers
+2. Users are asked to verify email for account creation and the users will also have the ability to reset password.
+3. Sends daily email to remind user of any upcoming urgent projects
+4. Sends weekly email to congrat user on any completed projects of the week
+5. Query current browser window for all active tabs and save their URLs+Titles as tab objects in our database when users decide to create or edit a project
+6. Users are able to open the tabs when they clicked on a project
 
 ## Sub-features
-- Subtasks: Assignment can be broken down into subtasks e.g. 'Research', 'First Code Draft, 'Debugging' etc etc and certain tabs from the whole window can be assigned to these subtasks.
-- Calendar: Sync up with calendar apps, using calendar APIs, allows emails, etc to be sent, to be notified once assignements reach the 'Up Coming' tag
+- User Categories: Projects can be broken down into user own custom categories such as 'Studies', 'Works', and 'Hobbies'.
+- Calendar View: allow the users to view all projects in calendar form to help users have an easier time visualizing and planning all their projects.
 
-__**Goal:**__ Help the user organize projects on a web browsers more conveniently, and prevent procrastination. The website will have constant reminders of deadline's when user is logged in. It will also create a tailored schedule that entails a responsible, productive balance of coursework, fitness goals, etc.
+__**Goal:**__ Help the user organize projects on a web browsers more conveniently. The website will have constant daily alerts for urgent projects and weekly congratulation for completed projects, which are implemented to help prevent procrastination and encourage completing projects.
 
 ## 🛠️ Technologies & Tools
 - [Programming Languages] HTML, CSS, Javascript
-- [Frameworks] React.JS, Tailwind CSS
-- [API's] Todolist, OAuth (Backup: Calendar, Progressbar) - Recommend schedules, searches/tabs for saved windows
+- [Frameworks] Vite, React.JS, Tailwind CSS, Express
+- [API's] Firebase, Sendgrid, Chrome Tabs
 
 ## 📆 Timeline
 | Phase            | Task Description                   | Deadline              |
