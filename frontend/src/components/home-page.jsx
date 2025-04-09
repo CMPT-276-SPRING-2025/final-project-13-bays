@@ -215,7 +215,7 @@ const openTabsForProject = async (projectId) => {
     console.log("URLs being sent to extension:", urls); // Debugging log
 
     if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.connect) {
-      const TabMarkHelperID = "ombjnnoklkbbmedngjcmbljnlppbdlcf";
+      const TabMarkHelperID = "piibaobaaoglkbimkbglbkjhnpelikka";
       const port = chrome.runtime.connect(TabMarkHelperID, { name: "frontend-connection" });
 
       port.postMessage({ action: "openTabs", urls });
@@ -568,7 +568,7 @@ const openTabsForProject = async (projectId) => {
         // If saveTabs is true, save the tabs to Firestore
         if (newProject.saveTabs) {
           if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.connect) {
-            const TabMarkHelperID = "ombjnnoklkbbmedngjcmbljnlppbdlcf";
+            const TabMarkHelperID = "piibaobaaoglkbimkbglbkjhnpelikka";
             const port = chrome.runtime.connect(TabMarkHelperID, { name: "frontend-connection" });
   
             port.postMessage({ action: "saveTabs" });
@@ -869,7 +869,7 @@ const openTabsForProject = async (projectId) => {
         console.log("Project edited and updated in Firestore!");
         if (projectToEdit.saveTabs) {
           if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.connect) {
-            const TabMarkHelperID = "ombjnnoklkbbmedngjcmbljnlppbdlcf";
+            const TabMarkHelperID = "piibaobaaoglkbimkbglbkjhnpelikka";
             const port = chrome.runtime.connect(TabMarkHelperID, { name: "frontend-connection" });
   
             port.postMessage({ action: "saveTabs" });
