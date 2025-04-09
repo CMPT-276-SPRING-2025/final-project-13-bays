@@ -1,5 +1,7 @@
 "use client"
 
+const EXTENSION_ID = "ombjnnoklkbbmedngjcmbljnlppbdlcf"
+
 import { useEffect, useState, useRef, useMemo} from "react"
 import { auth, storage, db } from "../firebase-config.js"
 import { useNavigate } from "react-router-dom"
@@ -17,6 +19,7 @@ import deleteProjectFromFirestore from "./DeleteProject"
 import modifyProjectInFirestore from "./ModifyProject"
 import { saveTabsToFirestore, getTabsFromFirestore } from "../utils/ExtensionUtils.js"
 import { calculateTimeLeft, calculateTimeSince } from "./CalculateTimeLeft.jsx"
+
 
 // helper function for name reformat
 function formatDisplayName(name) {
@@ -223,7 +226,7 @@ const openTabsForProject = async (projectId) => {
     console.log("URLs being sent to extension:", urls); // Debugging log
 
     if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.connect) {
-      const TabMarkHelperID = "ombjnnoklkbbmedngjcmbljnlppbdlcf";
+      const TabMarkHelperID = EXTENSION_ID 
       const port = chrome.runtime.connect(TabMarkHelperID, { name: "frontend-connection" });
 
       port.postMessage({ action: "openTabs", urls });
@@ -669,9 +672,8 @@ const openTabsForProject = async (projectId) => {
       // If saveTabs is true, save the tabs to Firestore
       if (newProject.saveTabs) {
         if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.connect) {
-          const TabMarkHelperID = "ombjnnoklkbbmedngjcmbljnlppbdlcf";
+          const TabMarkHelperID = EXTENSION_ID
           const port = chrome.runtime.connect(TabMarkHelperID, { name: "frontend-connection" });
-  
           port.postMessage({ action: "saveTabs" });
           port.onMessage.addListener(async (response) => {
             if (response?.success) {
@@ -1039,7 +1041,7 @@ const filteredProjects = useMemo(() => {
         console.log("Project edited and updated in Firestore!");
         if (projectToEdit.saveTabs) {
           if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.connect) {
-            const TabMarkHelperID = "ombjnnoklkbbmedngjcmbljnlppbdlcf";
+            const TabMarkHelperID = EXTENSION_ID
             const port = chrome.runtime.connect(TabMarkHelperID, { name: "frontend-connection" });
   
             port.postMessage({ action: "saveTabs" });
@@ -2529,18 +2531,18 @@ const filteredProjects = useMemo(() => {
                 Replace the saved tabs for this project with your currently open tabs?
                 </p>
                 <div className="flex space-x-4">
-                  <button
-                    className={`px-4 py-2 rounded-md ${!projectToEdit.saveTabs ? "bg-[#f8eece] text-purple-950 hover:bg-[#ff7a55] font-passion-one" : "bg-[#FF8C6B] text-xl text-white font-passion-one"}`}
-                    onClick={() => setProjectToEdit({ ...projectToEdit, saveTabs: true })}
-                    >
-                    Yes
-                  </button>
-                  <button
-                    className={`px-4 py-2 rounded-md ${projectToEdit.saveTabs ? "bg-[#f8eece] text-purple-950 hover:bg-[#ff7a55] font-passion-one" : "bg-[#FF8C6B] text-xl text-white font-passion-one"}`}
-                    onClick={() => setProjectToEdit({ ...projectToEdit, saveTabs: false})}
-                  >
-                    No
-                  </button>
+                <button
+                className={`px-4 py-2 rounded-md ${projectToEdit.saveTabs ? "bg-[#FF8C6B] text-xl text-white font-passion-one" : "bg-[#f8eece] text-purple-950 hover:bg-[#ff7a55] font-passion-one"}`}
+                onClick={() => setProjectToEdit({ ...projectToEdit, saveTabs: true })}
+              >
+                Yes
+              </button>
+              <button
+                className={`px-4 py-2 rounded-md ${!projectToEdit.saveTabs ? "bg-[#FF8C6B] text-xl text-white font-passion-one" : "bg-[#f8eece] text-purple-950 hover:bg-[#ff7a55] font-passion-one"}`}
+                onClick={() => setProjectToEdit({ ...projectToEdit, saveTabs: false})}
+              >
+                No
+              </button>
                 </div>
               </div>
 
