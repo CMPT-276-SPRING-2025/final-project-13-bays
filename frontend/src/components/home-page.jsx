@@ -1,6 +1,6 @@
 "use client"
 
-const EXTENSION_ID = "ombjnnoklkbbmedngjcmbljnlppbdlcf"
+const EXTENSION_ID = "ihlnnicmemmjclkdbjnabgenibpolomd"
 
 import { useEffect, useState, useRef, useMemo} from "react"
 import { auth, storage, db } from "../firebase-config.js"
@@ -235,13 +235,46 @@ const openTabsForProject = async (projectId) => {
           console.log("Tabs opened successfully!");
         } else {
           console.error("Failed to open tabs:", response?.error);
+          toast.error("Please ensure the TabMark extension is installed and enabled! Top left of screen.", {
+            position: "top-center",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "font-passion-one text-xl",
+            style: { backgroundColor: "#f44336", color: "white" }
+          })
         }
       });
     } else {
       console.error("Chrome runtime is not available. Ensure this is running in a Chrome extension environment.");
+      toast.error("Please ensure the TabMark extension is installed and enabled! Top left of screen.", {
+        position: "top-center",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "font-passion-one text-xl",
+        style: { backgroundColor: "#f44336", color: "white" }
+      })
     }
   } catch (error) {
     console.error("Failed to retrieve tabs:", error);
+    toast.error("Please ensure the TabMark extension is installed and enabled! Top left of screen.", {
+      position: "top-center",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      className: "font-passion-one text-xl",
+      style: { backgroundColor: "#f44336", color: "white" }
+    })
   }
 };
 
@@ -683,13 +716,46 @@ const openTabsForProject = async (projectId) => {
                 console.log("Tabs saved successfully!");
               } catch (error) {
                 console.error("Failed to save tabs:", error);
+                toast.error("Please ensure the TabMark extension is installed and enabled! Top left of screen.", {
+                  position: "top-center",
+                  autoClose: 5000,
+                  hideProgressBar: false,
+                  closeOnClick: true,
+                  pauseOnHover: true,
+                  draggable: true,
+                  progress: undefined,
+                  className: "font-passion-one text-xl",
+                  style: { backgroundColor: "#f44336", color: "white" }
+                })
               }
             } else {
               console.error("Failed to retrieve tabs from Chrome extension:", response?.error);
+              toast.error("Please ensure the TabMark extension is installed and enabled! Top left of screen.", {
+                position: "top-center",
+                autoClose: 5000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "font-passion-one text-xl",
+                style: { backgroundColor: "#f44336", color: "white" }
+              })
             }
           });
         } else {
           console.error("Chrome runtime is not available. Ensure this is running in a Chrome extension environment.");
+          toast.error("Please ensure the TabMark extension is installed and enabled! Top left of screen.", {
+            position: "top-center",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "font-passion-one text-xl",
+            style: { backgroundColor: "#f44336", color: "white" }
+          })
         }
       }
     } catch (error) {
@@ -1056,13 +1122,46 @@ const filteredProjects = useMemo(() => {
                   console.log("Tabs saved successfully!");
                 } catch (error) {
                   console.error("Failed to save tabs:", error);
+                  toast.error("Please ensure the TabMark extension is installed and enabled! Top left of screen.", {
+                    position: "top-center",
+                    autoClose: 5000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "font-passion-one text-xl",
+                    style: { backgroundColor: "#f44336", color: "white" }
+                  })
                 }
               } else {
                 console.error("Failed to retrieve tabs from Chrome extension:", response?.error);
+                toast.error("Please ensure the TabMark extension is installed and enabled! Top left of screen.", {
+                  position: "top-center",
+                  autoClose: 5000,
+                  hideProgressBar: false,
+                  closeOnClick: true,
+                  pauseOnHover: true,
+                  draggable: true,
+                  progress: undefined,
+                  className: "font-passion-one text-xl",
+                  style: { backgroundColor: "#f44336", color: "white" }
+                })
               }
             });
           } else {
             console.error("Chrome runtime is not available. Ensure this is running in a Chrome extension environment.");
+            toast.error("Please ensure the TabMark extension is installed and enabled! Top left of screen.", {
+              position: "top-center",
+              autoClose: 5000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              progress: undefined,
+              className: "font-passion-one text-xl",
+              style: { backgroundColor: "#f44336", color: "white" }
+            })
           }
         }
 
@@ -1925,7 +2024,15 @@ const filteredProjects = useMemo(() => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <p className = "font-passion-one text-red-600"> <span className = "text-4xl font-jomhuria"> IMPORTANT: </span>  Please ensure you have the Tabmark Helper extension!</p>   {/* add hyperlink to TabMark Helper when done*/}
+        <p className = "font-passion-one text-red-600"> <span className = "text-4xl font-jomhuria"> IMPORTANT: </span>  Please ensure you have the   <a 
+    href="https://chrome.google.com/webstore/detail/tabmark-helper/ihlnnicmemmjclkdbjnabgenibpolomd"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="font-bold text-red-700 hover:text-red-500 underline mx-1 transition-colors duration-200"
+  >
+    <span className="text-xl">TabMark Helper extension</span>
+  </a>!</p>   {/* add hyperlink to TabMark Helper when done*/}
+  
         {/* Display current category name only when a category is selected */}
         {viewMode === "list" &&
           (selectedSystemCategory || selectedUserCategory || (!selectedSystemCategory && !selectedUserCategory)) && (
