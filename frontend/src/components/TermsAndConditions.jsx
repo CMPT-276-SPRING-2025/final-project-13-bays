@@ -9,7 +9,7 @@ const TermsAndConditions = () => {
         <div className="flex justify-center items-center mb-4 relative">
           <h1 className="text-[#FF8C6B] text-8xl mb-2 font-jomhuria">Terms and Conditions</h1>
           <img
-            src="../public/bookmark-64.png"
+            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/bookmark-64-VzKKVpB39vMeN9d3EyRBWofXUPNhoW.png"
             alt="TabMark Logo"
             className="h-12 w-12 ml-8 mb-5 right-0"
           />

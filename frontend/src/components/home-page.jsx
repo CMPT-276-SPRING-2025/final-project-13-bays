@@ -1655,7 +1655,7 @@ const filteredProjects = useMemo(() => {
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-5xl font-bold font-jomhuria tracking-wide text-[#FF8C6B] mt-3">TabMark</h2>
             <img
-                src="../public/bookmark-64.png"
+                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/bookmark-64-VzKKVpB39vMeN9d3EyRBWofXUPNhoW.png"
                 alt="TabMark Logo"
                 className="h-8 w-8 mr-4 mt-1"
               />
@@ -1987,6 +1987,7 @@ const filteredProjects = useMemo(() => {
             />
           </div>
         )}
+        
 
         {/* 2. User Display Name */}
         {user ? (
