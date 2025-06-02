@@ -15,7 +15,7 @@ chrome.runtime.onConnectExternal.addListener((port) => {
     
         const tabData = tabs
           .filter((tab) => tab.url && tab.title) // Filter out invalid tabs
-          .filter((tab) => !tab.url.includes("localhost:5173") &&  !tab.url.includes("https://tabmark-d081a.web.app"))
+          .filter((tab) => !tab.url.includes("localhost:5173") &&  !tab.url.includes("https://tabmark-d081a.web.app") &&  !tab.url.includes("https://tabmark.pro"))
           .map((tab) => ({ url: tab.url, title: tab.title }));
     
         console.log("Formatted tab data:", tabData);
